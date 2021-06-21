@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SharpGLTF.Memory;
 using SharpGLTF.Schema2;
 using PrimitiveType = Microsoft.Xna.Framework.Graphics.PrimitiveType;
 
@@ -29,7 +30,8 @@ namespace AppleScene.Rendering
         /// </summary>
         public Effect Effect { get; set; }
 
-        private VertexBuffer[] _vertexBuffers;
+        private readonly VertexBuffer[] _vertexBuffers;
+        private readonly IndexBuffer[] _indexBuffers;
 
         /// <summary>
         /// Creates an instance of MeshData from a sharpGLTF mesh instance
@@ -46,12 +48,12 @@ namespace AppleScene.Rendering
         public MeshData(Mesh mesh, GraphicsDevice graphicsDevice, Effect? effect = null)
         {
             int count = mesh.Primitives.Count;
-            
+
             Vertices = new VertexPositionNormalTexture[count][];
             GraphicsDevice = graphicsDevice;
             Effect = effect ?? new BasicEffect(graphicsDevice)
                 {Alpha = 1, VertexColorEnabled = true, LightingEnabled = true};
-            _vertexBuffers = new VertexBuffer[count];
+            (_vertexBuffers, _indexBuffers) = (new VertexBuffer[count], new IndexBuffer[count]);
 
             //Get the vertices.
             for (int i = 0; i < count; i++)
@@ -75,28 +77,52 @@ namespace AppleScene.Rendering
                 Vertices[i] = new VertexPositionNormalTexture[posCount];
                 for (int j = 0; j < posCount; j++)
                 {
-                    Vertices[i][j] = new VertexPositionNormalTexture(positionVectors[i], normalVectors[i], texCords[i]);
+                    Vertices[i][j] = new VertexPositionNormalTexture(positionVectors[j], normalVectors[j], texCords[j]);
                 }
 
                 _vertexBuffers[i] = new VertexBuffer(graphicsDevice, typeof(VertexPositionNormalTexture), posCount,
                     BufferUsage.WriteOnly);
                 _vertexBuffers[i].SetData(Vertices[i]);
+
+                uint[] indexBuffer = new uint[primitive.IndexAccessor.Count];
+                primitive.IndexAccessor.AsIndicesArray().CopyTo(indexBuffer, 0);
+                _indexBuffers[i] =
+                    new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indexBuffer.Length, BufferUsage.None);
+                _indexBuffers[i].SetData(indexBuffer);
             }
         }
 
         /// <summary>
         /// Draws the mesh based on the data.
         /// </summary>
+        /// <param name="worldMatrix">The world matrix that represents the scale, position, and rotation of the mesh to
+        /// be drawn. This parameter has no "effect" (pun not-intended) if the Effect property does not implement
+        /// IEffectMatrices.</param>
+        /// <param name="viewMatrix">The view matrix that represents from what perspective the model is being viewed
+        /// from. This parameter has no effect if the Effect property does not implement IEffectMatrices.</param>
+        /// <param name="projectionMatrix">The projection matrix that represents certain properties of the viewer
+        /// (field of view, render distance, etc.) This parameter has no effect if the Effect property does not
+        /// implement IEffectMatrices.</param>
+        /// <param name="rasterizerState">The RasterizierState the GraphicsDevice will use when rendering the mesh.</param>
+        /// <param name="primitiveIndex">Determines which MeshPrimitive to draw. Default index is zero.</param>
         public void Draw(in Matrix worldMatrix, in Matrix viewMatrix, in Matrix projectionMatrix, RasterizerState rasterizerState, int primitiveIndex = 0)
         {
             RasterizerState prevState = GraphicsDevice.RasterizerState;
             GraphicsDevice.RasterizerState = rasterizerState;
             GraphicsDevice.SetVertexBuffer(_vertexBuffers[primitiveIndex]);
+            GraphicsDevice.Indices = _indexBuffers[primitiveIndex];
+            
+            if (Effect is IEffectMatrices matrices)
+            {
+                (matrices.World, matrices.View, matrices.Projection) = (worldMatrix, viewMatrix, projectionMatrix);
+            }
 
             foreach (EffectPass pass in Effect.CurrentTechnique.Passes)
             {
                 pass.Apply();
-                GraphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, Vertices[primitiveIndex].Length);
+
+                GraphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0,
+                    GraphicsDevice.Indices.IndexCount / 3);
             }
 
             GraphicsDevice.RasterizerState = prevState;
