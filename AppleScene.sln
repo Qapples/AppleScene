@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppleScene.Rendering", "App
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppleScene.Animation", "AppleScene.Animation\AppleScene.Animation.csproj", "{7E4FB17E-9A48-4D42-A90B-BB53EEC2F50E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppleScene.Helpers", "AppleScene.Helpers\AppleScene.Helpers.csproj", "{2B956DFA-7622-416F-8A8D-5C35FD2E83FF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{7E4FB17E-9A48-4D42-A90B-BB53EEC2F50E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7E4FB17E-9A48-4D42-A90B-BB53EEC2F50E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7E4FB17E-9A48-4D42-A90B-BB53EEC2F50E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B956DFA-7622-416F-8A8D-5C35FD2E83FF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B956DFA-7622-416F-8A8D-5C35FD2E83FF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B956DFA-7622-416F-8A8D-5C35FD2E83FF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B956DFA-7622-416F-8A8D-5C35FD2E83FF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
