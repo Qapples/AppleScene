@@ -2,11 +2,16 @@
 
     <PropertyGroup>
         <TargetFramework>net5.0</TargetFramework>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.1986-develop" />
       <PackageReference Include="SharpGLTF.Core" Version="1.0.0-alpha0023" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\AppleScene.Animation\AppleScene.Animation.csproj" />
     </ItemGroup>
 
 </Project>
