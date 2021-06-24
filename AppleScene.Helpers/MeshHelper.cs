@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SharpGLTF.Schema2;
 
@@ -15,7 +16,6 @@ namespace AppleScene.Rendering
         /// <param name="graphicsDevice">GraphicsDevice instance to draw with.</param>
         public static void Draw(this Mesh mesh, GraphicsDevice graphicsDevice)
         {
-            
         }
     }
 }
