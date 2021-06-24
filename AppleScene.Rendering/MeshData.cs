@@ -1,11 +1,12 @@
 #nullable enable
-using System;
 using System.Diagnostics;
 using System.Linq;
+using AppleScene.Animation;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Design;
 using Microsoft.Xna.Framework.Graphics;
-using SharpGLTF.Memory;
 using SharpGLTF.Schema2;
+using SharpGLTF.Transforms;
 using PrimitiveType = Microsoft.Xna.Framework.Graphics.PrimitiveType;
 
 namespace AppleScene.Rendering
@@ -15,13 +16,37 @@ namespace AppleScene.Rendering
     /// </summary>
     public class MeshData
     {
+        //We're separating the vertices from the joint and weights so that we don't have to create an extra copy of the
+        //vertices when making the vertex buffer
+
         /// <summary>
         /// Vertices of each primitive list in the mesh.
         /// </summary>
         public VertexPositionNormalTexture[][] Vertices { get; set; }
+        
+        /// <summary>
+        /// The x, y, z, and w values are indexes for the Joints property. A vertex at Vertices[i][j] is affected or
+        /// manipulated by four joints: Joints[i][JointsForVertices[i][j].X], Joints[i][JointsForVertices[i][j].Y],
+        /// Joints[i][JointsForVertices[i][j].Z], and Joints[i][JointsForVertices[i][j].W] 
+        /// </summary>
+        public Vector4[]?[] JointsForVertices { get; set; }
+        
+        public Joint[]?[] Joints { get; set; }
+        
+        /// <summary>
+        /// How much of an effect the joint at Joints[i][j] have on the vertex at Vertices[i][j]. If an array is null,
+        /// then the primitive associated with that array does not have weights or joints.
+        /// </summary>
+        public Vector4[]?[] Weights { get; set; }
+        
+        /// <summary>
+        /// Represents the transform of each of the joints. If an array is
+        /// null, then the primitive associated with that array does not have joints.
+        /// </summary>
+        public Matrix[]?[] JointMatrices { get; set; }
 
         /// <summary>
-        /// The GraphicsDevice instance used to create Effects and to draw the mesh.
+        /// The GraphicsDevice instance used to create Effects (if need be) and to draw the mesh.
         /// </summary>
         public GraphicsDevice GraphicsDevice { get; set; }
         
@@ -49,23 +74,39 @@ namespace AppleScene.Rendering
         {
             int count = mesh.Primitives.Count;
 
-            Vertices = new VertexPositionNormalTexture[count][];
             GraphicsDevice = graphicsDevice;
             Effect = effect ?? new BasicEffect(graphicsDevice)
                 {Alpha = 1, VertexColorEnabled = true, LightingEnabled = true};
             (_vertexBuffers, _indexBuffers) = (new VertexBuffer[count], new IndexBuffer[count]);
+            (Vertices, Joints, JointsForVertices, Weights, JointMatrices) = (new VertexPositionNormalTexture[count][],
+                new Joint[count][], new Vector4[count][], new Vector4[count][], new Matrix[count][]);
+
+            ModelRoot modelRoot = mesh.LogicalParent;
 
             //Get the vertices.
             for (int i = 0; i < count; i++)
             {
                 MeshPrimitive primitive = mesh.Primitives[i];
 
-                var (positionVectors, normalVectors, texCords) = (
+                //TODO: There may be more than one set of joints, weights, or texture cords. Account for them in the future perhaps?
+                var (positionVectors, normalVectors, texCords, jointVectors, weightVectors) = (
                     primitive.VertexAccessors["POSITION"].AsVector3Array(),
                     primitive.VertexAccessors["NORMAL"].AsVector3Array(),
-                    primitive.VertexAccessors["TEXCOORD_0"].AsVector2Array());
+                    primitive.VertexAccessors["TEXCOORD_0"].AsVector2Array(),
+                    primitive.VertexAccessors["JOINTS_0"].AsVector4Array(),
+                    primitive.VertexAccessors["WEIGHTS_0"].AsVector4Array());
 
-                var (posCount, normalCount, texCount) = (positionVectors.Count, normalVectors.Count, texCords.Count);
+                if (positionVectors is null || normalVectors is null || texCords is null)
+                {
+                    Debug.WriteLine($"The following necessary accessors were not found:\n" +
+                                    $"Position accessor: {(positionVectors is null ? "Not Found" : "Found")}\n" +
+                                    $"Normal accessor: {(normalVectors is null ? "Not Found" : "Found")}\n" +
+                                    $"Texture cords accessor: {(texCords is null ? "Not Found" : "Found")}\n");
+                    continue;
+                }
+
+                var (posCount, normalCount, texCount, jointCount, weightCount) = (positionVectors.Count,
+                    normalVectors.Count, texCords.Count, jointVectors.Count, weightVectors.Count);
                 if (posCount != normalCount || posCount != texCount)
                 {
                     Debug.WriteLine("One of the vertex lengths for position, normal, and texture cords are not" +
@@ -78,6 +119,45 @@ namespace AppleScene.Rendering
                 for (int j = 0; j < posCount; j++)
                 {
                     Vertices[i][j] = new VertexPositionNormalTexture(positionVectors[j], normalVectors[j], texCords[j]);
+                }
+
+                //If there are joints
+                if (jointCount > 0)
+                {
+                    //there is usually only one visual parent, and that parent would be the node of the entire model.
+                    //(not the model root!). This baseNode is used in the calculation of Joint matrices.
+                    Node baseNodeOfMesh = mesh.VisualParents.First();
+
+                    //Get all the data regarding joints from the skin.
+                    Skin modelSkin = modelRoot.LogicalSkins[i];
+                    Joints[i] = new Joint[modelSkin.JointsCount];
+                    JointMatrices[i] = new Matrix[modelSkin.JointsCount];
+                    
+                    for (int j = 0; j < Joints.Length; j++)
+                    {
+                        //can't use deconstruction because of the implicitly between Matrix and Matrix4x4
+                        (Node Joint, Matrix InverseBindMatrix) modelJoint = modelSkin.GetJoint(j);
+
+                        Joints[i]![j] = new Joint(modelJoint.Joint, JointMatrices[i]!, j, baseNodeOfMesh.WorldMatrix,
+                            in modelJoint.InverseBindMatrix);
+                    }
+
+                    //JointsForVertices is for each vertex
+                    JointsForVertices[i] = new Vector4[jointCount];
+                    for (int j = 0; j < jointVectors.Count; j++)
+                    {
+                        JointsForVertices[i]![j] = jointVectors[j];
+                    }
+                }
+
+                //If there are weights
+                if (weightCount > 0)
+                {
+                    Weights[i] = new Vector4[weightCount];
+                    for (int j = 0; j < weightCount; j++)
+                    {
+                        Weights[i]![j] = weightVectors[j];
+                    }
                 }
 
                 _vertexBuffers[i] = new VertexBuffer(graphicsDevice, typeof(VertexPositionNormalTexture), posCount,

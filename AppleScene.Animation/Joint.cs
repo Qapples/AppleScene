@@ -3,6 +3,9 @@ using SharpGLTF.Schema2;
 
 namespace AppleScene.Animation
 {
+    /// <summary>
+    /// Represents a joint of a skin in a gLTF model.
+    /// </summary>
     public class Joint
     {
         /// <summary>
@@ -46,6 +49,4 @@ namespace AppleScene.Animation
                 (node, jointMatrices, jointMatrixIndex, Matrix.Invert(globalTransformOfMesh) * node.WorldMatrix * inverseBindTransform, inverseBindTransform);
         }
     }
-
-    public record JointVector(Joint X, Joint Y, Joint Z, Joint W);
 }
