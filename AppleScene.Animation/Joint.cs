@@ -30,7 +30,6 @@ namespace AppleScene.Animation
         /// </summary>
         public Matrix InverseBindTransform { get; set; }
 
-
         private Matrix[] _jointMatrices;
 
         /// <summary>

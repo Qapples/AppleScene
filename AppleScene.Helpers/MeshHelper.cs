@@ -1,8 +1,7 @@
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SharpGLTF.Schema2;
 
-namespace AppleScene.Rendering
+namespace AppleScene.Helpers
 {
     /// <summary>
     /// Provides methods in assisting with dealing with SharpGLTF Mesh instances in a Monogame context.
