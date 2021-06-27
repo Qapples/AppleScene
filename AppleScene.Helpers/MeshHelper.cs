@@ -49,7 +49,7 @@ namespace AppleScene.Helpers
             
             foreach (var accessor in _singleAccessors)
             {
-                if (primitive.VertexAccessors[accessor.Name].Count > 0)
+                if (primitive.VertexAccessors.TryGetValue(accessor.Name, out _))
                 {
                     elements.Add(new VertexElement((offset += accessor.Offset), accessor.Format, accessor.Usage, 0));
                 }
@@ -57,12 +57,12 @@ namespace AppleScene.Helpers
 
             foreach (var accessor in _multiAccessors)
             {
-                for (int i = 0; primitive.VertexAccessors[$"{accessor.Name}_{i}"].Count > 0; i++)
+                for (int i = 0; primitive.VertexAccessors.TryGetValue($"{accessor.Name}_{i}", out _); i++)
                 {
                     elements.Add(new VertexElement((offset += accessor.Offset), accessor.Format, accessor.Usage, i));
                 }
             }
-
+            
             return new VertexDeclaration(offset, elements.ToArray());
         }
     }
