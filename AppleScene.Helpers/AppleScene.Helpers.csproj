@@ -9,4 +9,8 @@
       <PackageReference Include="SharpGLTF.Core" Version="1.0.0-alpha0023" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\AppleScene.Animation\AppleScene.Animation.csproj" />
+    </ItemGroup>
+
 </Project>

@@ -12,6 +12,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\AppleScene.Animation\AppleScene.Animation.csproj" />
+      <ProjectReference Include="..\AppleScene.Helpers\AppleScene.Helpers.csproj" />
     </ItemGroup>
 
 </Project>

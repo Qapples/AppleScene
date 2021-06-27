@@ -42,7 +42,7 @@ namespace AppleScene.Helpers
         /// </summary>
         /// <param name="primitive">The <see cref="MeshPrimitive"/> to get the VertexDeclaration of.</param>
         /// <returns>The VertexDeclaration which states what data each vertex has and what they are used for.</returns>
-        public static VertexDeclaration GetDeclarationFromPrimitive(MeshPrimitive primitive)
+        public static VertexDeclaration GetDeclarationFromPrimitive(this MeshPrimitive primitive)
         {
             List<VertexElement> elements = new();
             int offset = 0;
