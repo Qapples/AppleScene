@@ -1,8 +1,13 @@
 #nullable enable
 using System;
+using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using AppleScene.Animation;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Graphics.PackedVector;
 using SharpGLTF.Schema2;
 
 namespace AppleScene.Helpers
@@ -13,36 +18,61 @@ namespace AppleScene.Helpers
     public static class MeshHelper
     {
         /// <summary>
-        /// Gets the vertex type that a primitive uses for it's vertices.
+        /// Accessors that usually only exist once in a <see cref="MeshPrimitive"/>
         /// </summary>
-        /// <param name="primitive">The primitive to get the vertex type from.</param>
-        /// <returns>If successful, the vertex type of the primitive is used. If unsuccessful and the type cannot be
-        /// determined, then null is returned.</returns>
-        public static Type? GetVertexType(this MeshPrimitive primitive)
+        private static readonly AccessorDefinition[] _singleAccessors =
         {
-            //This mask represents what accessors the primitive has to determine what VertexType to use.
-            byte mask = (byte) (IsAccessor(primitive, "POSITION") +
-                                (IsAccessor(primitive, "NORMAL") << 1) +
-                                (IsAccessor(primitive, "TEXCOORD_0") << 2) +
-                                (IsAccessor(primitive, "JOINTS_0") << 3) +
-                                (IsAccessor(primitive, "WEIGHTS_0") << 4));
+            new("POSITION", 12, VertexElementFormat.Vector3, VertexElementUsage.Position),
+            new("NORMAL", 12, VertexElementFormat.Vector3, VertexElementUsage.Normal)
+        };
 
-            switch (mask)
+        /// <summary>
+        /// Accessors that can exist more than once in a <see cref="MeshPrimitive"/>. Add "_x" (where x is any positive
+        /// integer) to the end of the name to indicate which accessor to obtain.
+        /// </summary>
+        private static readonly AccessorDefinition[] _multiAccessors =
+        {
+            new("TEXCOORD", 8, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate),
+            new("JOINTS", 8, VertexElementFormat.Short4, VertexElementUsage.BlendIndices),
+            new("WEIGHTS", 16, VertexElementFormat.Vector4, VertexElementUsage.BlendWeight)
+        };
+        
+        /// <summary>
+        /// Gets the VertexDeclaration of the vertices of a specified <see cref="MeshPrimitive"/>.
+        /// </summary>
+        /// <param name="primitive">The <see cref="MeshPrimitive"/> to get the VertexDeclaration of.</param>
+        /// <returns>The VertexDeclaration which states what data each vertex has and what they are used for.</returns>
+        public static VertexDeclaration GetDeclarationFromPrimitive(MeshPrimitive primitive)
+        {
+            List<VertexElement> elements = new();
+            int offset = 0;
+            
+            foreach (var accessor in _singleAccessors)
             {
-                case 0b0000_0101: //has both Position and TexCoord_0
-                    return typeof(VertexPositionTexture);
-                case 0b0000_0111: //has Position, Normal, and TexCoord_0
-                    return typeof(VertexPositionNormalTexture);
-                case 0b0001_111: //has Position, Normal, TexCoord_0, Joints_0, and Weights_0
-                    return typeof(JointVertexType);
-                default:
-                    Debug.WriteLine($"GetVertexType: Cannot find valid vertex type for primitive: {primitive}. " +
-                                    $"Byte mask: {mask}. Returning null.");
-                    return null;
+                if (primitive.VertexAccessors[accessor.Name].Count > 0)
+                {
+                    elements.Add(new VertexElement((offset += accessor.Offset), accessor.Format, accessor.Usage, 0));
+                }
             }
-        }
 
-        private static byte IsAccessor(MeshPrimitive primitive, string name) =>
-            primitive.VertexAccessors[name] is null ? (byte) 0 : (byte) 1;
+            foreach (var accessor in _multiAccessors)
+            {
+                for (int i = 0; primitive.VertexAccessors[$"{accessor.Name}_{i}"].Count > 0; i++)
+                {
+                    elements.Add(new VertexElement((offset += accessor.Offset), accessor.Format, accessor.Usage, i));
+                }
+            }
+
+            return new VertexDeclaration(offset, elements.ToArray());
+        }
     }
+
+    /// <summary>
+    /// Provides information on VertexAccessors which are used to gather data regarding vertices.
+    /// </summary>
+    /// <param name="Name">The name of the accessor.</param>
+    /// <param name="Offset">The size of data format.</param>
+    /// <param name="Format">The type of data the accessor is referring to.</param>
+    /// <param name="Usage">What the data will be defining about a vertex.</param>
+    internal sealed record AccessorDefinition(string Name, int Offset, VertexElementFormat Format, VertexElementUsage Usage);
 }
