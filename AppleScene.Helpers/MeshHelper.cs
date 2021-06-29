@@ -11,6 +11,7 @@ using Microsoft.Xna.Framework.Graphics.PackedVector;
 using SharpGLTF.Runtime;
 using SharpGLTF.Schema2;
 using SharpGLTF.Transforms;
+using Buffer = System.Buffer;
 
 namespace AppleScene.Helpers
 {
@@ -81,6 +82,27 @@ namespace AppleScene.Helpers
         /// </returns>
         public static IMeshPrimitiveDecoder GetDecoder(this MeshPrimitive primitive) =>
             primitive.LogicalParent.Decode().Primitives[primitive.LogicalIndex];
+
+        /// <summary>
+        /// Creates an <see cref="IndexBuffer"/> for a <see cref="MeshPrimitive"/>.
+        /// </summary>
+        /// <remarks>Creating an <see cref="IndexBuffer"/> is memory expensive. Use this method sparingly.</remarks>
+        /// <param name="primitive">The <see cref="MeshPrimitive"/> instance to make an IndexBuffer from.</param>
+        /// <param name="graphicsDevice">Used to create the <see cref="IndexBuffer"/>.</param>
+        /// <param name="usage">The <see cref="BufferUsage"/> parameter value used when creating the
+        /// <see cref="IndexBuffer"/>. By default, it is <see cref="BufferUsage.None"/>.</param>
+        /// <returns>The <see cref="IndexBuffer"/> with the the indices from the primitive.</returns>
+        public static IndexBuffer GetIndexBuffer(this MeshPrimitive primitive, GraphicsDevice graphicsDevice,
+            BufferUsage usage = BufferUsage.None)
+        {
+            uint[] indexArray = new uint[primitive.IndexAccessor.Count];
+            primitive.IndexAccessor.AsIndicesArray().CopyTo(indexArray, 0);
+
+            IndexBuffer outBuffer = new(graphicsDevice, IndexElementSize.ThirtyTwoBits, indexArray.Length, usage);
+            outBuffer.SetData(indexArray);
+
+            return outBuffer;
+        }
         
         
         /// <summary>
