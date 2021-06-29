@@ -38,17 +38,6 @@ namespace AppleScene.Rendering
         }
 
         /// <summary>
-        /// Creates an instance of VertexDataHandler (with a span instead of an array)
-        /// </summary>
-        /// <param name="vertexData">The vertex data in the form of a ReadOnlySpan.</param>
-        /// <param name="declaration">The VertexDeclaration instance that defines how the vertices should be interpreted
-        /// </param>
-        public VertexDataHandler(in ReadOnlySpan<byte> vertexData, VertexDeclaration declaration) :
-            this(vertexData.ToArray(), declaration)
-        {
-        }
-
-        /// <summary>
         /// Adds additional vertices to the stored buffer.
         /// </summary>
         /// <param name="newVertexData">The vertex data to add.</param>
