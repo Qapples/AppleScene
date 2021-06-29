@@ -25,9 +25,9 @@ namespace AppleScene.Helpers
         /// instance is one way to obtain the instance needed for this parameter.</param>
         /// <returns>A <see cref="Span{T}"/> of bytes that represents the contacted data of the primitive for use in an
         /// XNA/MonoGame context.</returns>
-        public static Span<byte> GetXnaByteData(this IMeshPrimitiveDecoder primitive, VertexDeclaration decl)
+        public static byte[] GetXnaByteData(this IMeshPrimitiveDecoder primitive, VertexDeclaration decl)
         {
-            Span<byte> outSpan = new byte[primitive.VertexCount * decl.VertexStride];
+            byte[] outSpan = new byte[primitive.VertexCount * decl.VertexStride];
             VertexElement[] vertexElements = decl.GetVertexElements();
 
             for (int i = 0; i < primitive.VertexCount; i++)
@@ -42,27 +42,27 @@ namespace AppleScene.Helpers
                     switch (elm.VertexElementUsage)
                     {
                         case VertexElementUsage.Position:
-                            Encode(ref outSpan, offsetParam, primitive.GetPosition(i), elm.VertexElementFormat);
+                            Encode(outSpan, offsetParam, primitive.GetPosition(i), elm.VertexElementFormat);
                             break;
                         case VertexElementUsage.Normal:
-                            Encode(ref outSpan, offsetParam, primitive.GetNormal(i), elm.VertexElementFormat);
+                            Encode(outSpan, offsetParam, primitive.GetNormal(i), elm.VertexElementFormat);
                             break;
                         case VertexElementUsage.Tangent:
-                            Encode(ref outSpan, offsetParam, primitive.GetTangent(i), elm.VertexElementFormat);
+                            Encode(outSpan, offsetParam, primitive.GetTangent(i), elm.VertexElementFormat);
                             break;
                         case VertexElementUsage.Color:
-                            Encode(ref outSpan, offsetParam, primitive.GetColor(i, elm.UsageIndex),
+                            Encode(outSpan, offsetParam, primitive.GetColor(i, elm.UsageIndex),
                                 elm.VertexElementFormat);
                             break;
                         case VertexElementUsage.TextureCoordinate:
-                            Encode(ref outSpan, offsetParam, primitive.GetTextureCoord(i, elm.UsageIndex));
+                            Encode(outSpan, offsetParam, primitive.GetTextureCoord(i, elm.UsageIndex));
                             break;
                         case VertexElementUsage.BlendIndices:
-                            Encode(ref outSpan, offsetParam, new Vector4(skinWeights.Index0, skinWeights.Index1,
+                            Encode(outSpan, offsetParam, new Vector4(skinWeights.Index0, skinWeights.Index1,
                                 skinWeights.Index2, skinWeights.Index3), elm.VertexElementFormat);
                             break;
                         case VertexElementUsage.BlendWeight:
-                            Encode(ref outSpan, offsetParam, new Vector4(skinWeights.Weight0, skinWeights.Weight1,
+                            Encode(outSpan, offsetParam, new Vector4(skinWeights.Weight0, skinWeights.Weight1,
                                 skinWeights.Weight2, skinWeights.Weight4), elm.VertexElementFormat);
                             break;
                     }
@@ -72,14 +72,16 @@ namespace AppleScene.Helpers
             return outSpan;
         }
 
-        private static void Encode(ref Span<byte> span, int offset, in Vector2 value)
+        private static void Encode(byte[] bytes, int offset, in Vector2 value)
         {
             Vector2 temp = value;
-            MemoryMarshal.Write(span[offset..], ref temp);
+            MemoryMarshal.Write(bytes.AsSpan()[offset..], ref temp);
         }
 
-        private static bool Encode(ref Span<byte> span, int offset, in Vector3 value, in VertexElementFormat format)
+        private static bool Encode(byte[] bytes, int offset, in Vector3 value, in VertexElementFormat format)
         {
+            Span<byte> span = bytes; //implicit conversion
+            
             switch (format)
             {
                 case VertexElementFormat.Vector3:
@@ -96,8 +98,10 @@ namespace AppleScene.Helpers
             }
         }
 
-        private static bool Encode(ref Span<byte> span, int offset, in Vector4 value, in VertexElementFormat format)
+        private static bool Encode(byte[] bytes, int offset, in Vector4 value, in VertexElementFormat format)
         {
+            Span<byte> span = bytes; //implicit conversion
+            
             switch (format)
             {
                 case VertexElementFormat.Vector4:
