@@ -69,6 +69,19 @@ namespace AppleScene.Helpers
 
             return new VertexDeclaration(offset, elements.ToArray());
         }
+
+        /// <summary>
+        /// Gets the <see cref="IMeshPrimitiveDecoder"/> from a <see cref="MeshPrimitive"/>.
+        /// </summary>
+        /// <remarks>This extension method calls the Decode method from <see cref="SharpGLTF.Runtime.MeshDecoder"/>,
+        /// which is potentially an expensive operation. It is recommended to use this method as little as possible.
+        /// </remarks>
+        /// <param name="primitive">The <see cref="primitive"/> instance to decode.</param>
+        /// <returns>A <see cref="IMeshPrimitiveDecoder"/> instance that can be used to get data from the primitive
+        /// </returns>
+        public static IMeshPrimitiveDecoder GetDecoder(this MeshPrimitive primitive) =>
+            primitive.LogicalParent.Decode().Primitives[primitive.LogicalIndex];
+        
         
         /// <summary>
         /// Using an <see cref="IMeshPrimitiveDecoder"/>, gets the data from a primitive and contacts it into a
