@@ -13,18 +13,18 @@ namespace AppleScene.Rendering
     /// <summary>
     /// Represents the data of a <see cref="MeshPrimitive"/>.
     /// </summary>
-    public readonly struct PrimitiveData
+    public struct PrimitiveData : IDisposable
     {
         /// <summary>
         /// <see cref="VertexDataHandler"/> instance that handles the vertex data of the primitive.
         /// </summary>
-        public readonly VertexDataHandler VertexData;
+        public VertexDataHandler? VertexData { get; private set; }
         
         /// <summary>
         /// If the primitive has joints, this field represents the world-space transforms of each joint the primitive
         /// has. If the primitive does not have joints, then this field is null.
         /// </summary>
-        public readonly Matrix[]? JointMatrices;
+        public Matrix[]? JointMatrices { get; private set; }
 
         private readonly VertexBuffer _vertexBuffer;
         private readonly IndexBuffer _indexBuffer;
@@ -126,6 +126,16 @@ namespace AppleScene.Rendering
             }
 
             _graphicsDevice.RasterizerState = prevState;
+        }
+
+        #nullable disable
+        public void Dispose()
+        {
+            VertexData = null;
+            JointMatrices = null;
+            
+            _vertexBuffer.Dispose();
+            _indexBuffer.Dispose();
         }
     }
 }
