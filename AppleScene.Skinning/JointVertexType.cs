@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace AppleScene.Animation
+namespace AppleScene.Skinning
 {
     /// <summary>
     /// A vertex type with position, normal, texture coordinates, joint indices, and weights. Used for models that
