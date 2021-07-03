@@ -17,11 +17,12 @@ namespace AppleScene.Helpers
         /// <see cref="Skin"/>
         /// </summary>
         /// <param name="skin">A <see cref="Skin"/> instance to make the joint matrices from.</param>
-        /// <param name="animations"></param>
-        /// <param name="time"></param>
+        /// <param name="animations">An array of <see cref="Animation"/> that will influence each joint matrix
+        /// provided a float value representing time.</param>
+        /// <param name="currentTime">Represents how long the animation has been occuring for in seconds.</param>
         /// <returns>An array of global-space matrices for each joint in a <see cref="Skin"/>.</returns>
         //animations is a ReadOnlySpan here for compatibility purposes.
-        public static Matrix[] GetJointMatrices(this Skin skin, in ReadOnlySpan<Animation> animations, float time)
+        public static Matrix[] GetJointMatrices(this Skin skin, in ReadOnlySpan<Animation> animations, float currentTime)
         {
             Matrix[] jointMatrices = new Matrix[skin.JointsCount];
 
@@ -36,7 +37,7 @@ namespace AppleScene.Helpers
                 Matrix jointMatrix = inverseBindMatrix * Matrix.Invert(baseNodeOfSkin.WorldMatrix);
                 foreach (Animation animation in animations)
                 {
-                    jointMatrix *= joint.GetWorldMatrix(animation, time);
+                    jointMatrix *= joint.GetWorldMatrix(animation, currentTime);
                 }
 
                 jointMatrices[i] = jointMatrix;
@@ -44,7 +45,20 @@ namespace AppleScene.Helpers
 
             return jointMatrices.ToArray();
         }
-        
+
+        /// <summary>
+        /// Creates a new array of matrices that represent the global transform matrices of each joint in a
+        /// <see cref="Skin"/>. (With a single <see cref="Animation"/> instance instead of an array)
+        /// </summary>
+        /// <param name="skin">A <see cref="Skin"/> instance to make the joint matrices from.</param>
+        /// <param name="animation">An <see cref="Animation"/> that will influence each joint matrix provided a float
+        /// value representing time.</param>
+        /// <param name="currentTime">Represents how long the animation has been occuring for in seconds.</param>
+        /// <returns>An array of global-space matrices for each joint in a <see cref="Skin"/>.</returns>
+        // Not that much of a concern but maybe we can avoid an array allocation here?
+        public static Matrix[] GetJointMatrices(this Skin skin, Animation animation, float currentTime) =>
+            skin.GetJointMatrices(new ReadOnlySpan<Animation>(new[] {animation}), currentTime);
+
         /// <summary>
         /// Returns an array of matrices that will result in the given <see cref="Skin"/> instance to be in it's bind
         /// position
