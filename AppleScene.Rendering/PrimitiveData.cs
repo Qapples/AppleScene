@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using AppleScene.Helpers;
 using Microsoft.Xna.Framework;
@@ -13,19 +14,19 @@ namespace AppleScene.Rendering
     /// <summary>
     /// Represents the data of a <see cref="MeshPrimitive"/>.
     /// </summary>
-    public struct PrimitiveData : IDisposable
+    public sealed class PrimitiveData : IDisposable
     {
         /// <summary>
         /// <see cref="VertexDataHandler"/> instance that handles the vertex data of the primitive.
         /// </summary>
-        public VertexDataHandler? VertexData { get; private set; }
+        public VertexDataHandler VertexData { get; private set; }
         
         /// <summary>
-        /// If the primitive has joints, this field represents the world-space transforms of each joint the primitive
-        /// has. If the primitive does not have joints, then this field is null.
+        /// Represents the skin of the primitive. If null, then the primitive has no skin.
         /// </summary>
-        public Matrix[]? JointMatrices { get; private set; }
-
+        public Skin? Skin { get; private set; }
+        
+        
         private readonly VertexBuffer _vertexBuffer;
         private readonly IndexBuffer _indexBuffer;
 
@@ -40,14 +41,15 @@ namespace AppleScene.Rendering
         /// </param>
         /// <param name="graphicsDevice">Used to generate a <see cref="VertexBuffer"/> and to draw the primitive.
         /// </param>
-        /// <param name="jointMatrices">If the primitive has joints, this matrix represents the world-space transforms
-        /// of each joint the primitive has. If the primitive has no joints, set this parameter to null to indicate
+        /// <param name="skin">If the primitive has joints, this <see cref="Skin"/> instance will be used to
+        /// generate the joint matrices which are used to manipulate the position of the vertices based on it's own
+        /// position and orientation. If the primitive does not have joints, set this parameter to null to indicate
         /// as such.</param>
         public PrimitiveData(VertexDataHandler vertexData, IndexBuffer indexBuffer, GraphicsDevice graphicsDevice,
-            Matrix[]? jointMatrices = null)
+            Skin? skin = null)
         {
-            (VertexData, JointMatrices, _indexBuffer, _graphicsDevice) =
-                (vertexData, jointMatrices, indexBuffer, graphicsDevice);
+            (VertexData, Skin, _indexBuffer, _graphicsDevice) =
+                (vertexData, skin, indexBuffer, graphicsDevice);
 
             _vertexBuffer = vertexData.GenerateVertexBuffer(graphicsDevice);
         }
@@ -60,25 +62,23 @@ namespace AppleScene.Rendering
         /// </param>
         /// <param name="graphicsDevice">Used to generate a <see cref="VertexBuffer"/> and to draw the primitive.
         /// </param>
-        /// <param name="primitiveSkin">If the primitive has joints, this <see cref="Skin"/> instance will be used to
+        /// <param name="skin">If the primitive has joints, this <see cref="Skin"/> instance will be used to
         /// generate the joint matrices which are used to manipulate the position of the vertices based on it's own
         /// position and orientation. If the primitive does not have joints, set this parameter to null to indicate
         /// as such.</param>
-        public PrimitiveData(MeshPrimitive primitive, GraphicsDevice graphicsDevice, Skin? primitiveSkin = null)
+        public PrimitiveData(MeshPrimitive primitive, GraphicsDevice graphicsDevice, Skin? skin = null)
         {
             IMeshPrimitiveDecoder decoder = primitive.GetDecoder();
             VertexDeclaration decl = primitive.GetDeclaration();
-            
-            VertexData = new VertexDataHandler(decoder.GetXnaByteData(decl), decl);
 
-            _vertexBuffer = VertexData.GenerateVertexBuffer(graphicsDevice);
-            _indexBuffer = primitive.GetIndexBuffer(graphicsDevice);
+            (VertexData, Skin) = (new VertexDataHandler(decoder.GetXnaByteData(decl), decl), skin);
+
+            (_vertexBuffer, _indexBuffer) =
+                (VertexData.GenerateVertexBuffer(graphicsDevice), primitive.GetIndexBuffer(graphicsDevice));
 
             _graphicsDevice = graphicsDevice;
-
-            JointMatrices = primitiveSkin?.GetJointMatrices();
         }
-         
+
         /// <summary>
         /// Draws the primitive based on the data stored in this instance. 
         /// </summary>
@@ -91,14 +91,19 @@ namespace AppleScene.Rendering
         /// <param name="projectionMatrix">The projection matrix that represents certain properties of the viewer
         /// (field of view, render distance, etc.) This parameter has no effect if the Effect property does not
         /// implement <see cref="IEffectMatrices"/>.</param>
+        /// <param name="animations">If the primitive has animations, then this will represent the animations that will
+        /// be applied to <see cref="Skin"/>. Each <see cref="ActiveAnimation"/> instance also comes with a
+        /// <see cref="TimeSpan"/> representing how long the animation has been active for.</param>
         /// <param name="effect">An <see cref="Effect"/> instance that influences the way the primitive is drawn.
         /// This parameter must implement <see cref="IEffectMatrices"/> to apply world, view, and projection matrices.
         /// In addition, this parameter must implement <see cref="IEffectBones"/> for skinning, joints, and animation
         /// to be applied.</param>
         /// <param name="rasterizerState">The <see cref="RasterizerState"/> the stored <see cref="GraphicsDevice"/>
         /// will use when rendering the mesh.</param>
-        public void Draw(in Matrix worldMatrix, in Matrix viewMatrix, in Matrix projectionMatrix, Effect effect,
-            RasterizerState rasterizerState)
+        // we're using a ReadOnlySpan here for compatibility purposes (it can reference anything without creating any
+        // additional copies (I think)).
+        public void Draw(in Matrix worldMatrix, in Matrix viewMatrix, in Matrix projectionMatrix,
+            in ReadOnlySpan<ActiveAnimation> animations, Effect effect, RasterizerState rasterizerState)
         {
             RasterizerState prevState = _graphicsDevice.RasterizerState;
             _graphicsDevice.RasterizerState = rasterizerState;
@@ -112,9 +117,9 @@ namespace AppleScene.Rendering
                 (matrices.World, matrices.View, matrices.Projection) = (worldMatrix, viewMatrix, projectionMatrix);
             }
 
-            if (effect is IEffectBones bones && JointMatrices is not null)
+            if (effect is IEffectBones bones && Skin is not null && !animations.IsEmpty)
             {
-                bones.SetBoneTransforms(JointMatrices);
+                bones.SetBoneTransforms(Skin.GetJointMatrices(animations));
             }
 
             foreach (EffectPass pass in effect.CurrentTechnique.Passes)
@@ -128,12 +133,12 @@ namespace AppleScene.Rendering
             _graphicsDevice.RasterizerState = prevState;
         }
 
-        #nullable disable
+#nullable disable
+        /// <summary>
+        /// Diposes the stored buffer
+        /// </summary>
         public void Dispose()
         {
-            VertexData = null;
-            JointMatrices = null;
-            
             _vertexBuffer.Dispose();
             _indexBuffer.Dispose();
         }

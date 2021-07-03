@@ -90,7 +90,6 @@ namespace AppleScene.Helpers
         /// value representing time.</param>
         /// <param name="currentTime">Represents how long the animation has been occuring for in seconds.</param>
         /// <returns>An array of global-space matrices for each joint in a <see cref="Skin"/>.</returns>
-        // Not that much of a concern but maybe we can avoid an array allocation here?
         public static Matrix[] GetJointMatrices(this Skin skin, Animation animation, float currentTime) =>
             skin.GetJointMatrices(new ReadOnlySpan<Animation>(new[] {animation}), currentTime);
 
@@ -123,6 +122,11 @@ namespace AppleScene.Helpers
         /// The <see cref="Animation"/> instance.
         /// </summary>
         public Animation Animation { get; init; }
+        
+        /// <summary>
+        /// Determines if the animation is active or not.
+        /// </summary>
+        public bool IsActive { get; set; }
 
         /// <summary>
         /// How long the animation has been running for.
