@@ -48,6 +48,41 @@ namespace AppleScene.Helpers
 
         /// <summary>
         /// Creates a new array of matrices that represent the global transform matrices of each joint in a
+        /// <see cref="Skin"/>. (With a collection of <see cref="ActiveAnimation"/> instances instead)
+        /// </summary>
+        /// <param name="skin">A <see cref="Skin"/> instance to make the joint matrices from.</param>
+        /// <param name="animations">An array of <see cref="ActiveAnimation"/> instances that will influence
+        /// each joint matrix with a <see cref="TimeSpan"/> a value representing how long the animation has been
+        /// active for.</param>
+        // we're repeating code here so that we don't have to create any more arrays or lists than we need to and
+        // instead use ActiveAnimation instances directly.
+        public static Matrix[] GetJointMatrices(this Skin skin, in ReadOnlySpan<ActiveAnimation> animations)
+        {
+            Matrix[] jointMatrices = new Matrix[skin.JointsCount];
+
+            //there is usually only one visual parent, and that parent would be the node of the entire model.
+            //(not the model root!). This baseNode is used in the calculation of Joint matrices.
+            Node baseNodeOfSkin = skin.VisualParents.First();
+
+            for (int i = 0; i < skin.JointsCount; i++)
+            {
+                (Node joint, Matrix inverseBindMatrix) = skin.GetJoint(i);
+
+                Matrix jointMatrix = inverseBindMatrix * Matrix.Invert(baseNodeOfSkin.WorldMatrix);
+                foreach (ActiveAnimation animation in animations)
+                {
+                    jointMatrix *=
+                        joint.GetWorldMatrix(animation.Animation, (float) animation.CurrentTime.TotalSeconds);
+                }
+
+                jointMatrices[i] = jointMatrix;
+            }
+
+            return jointMatrices.ToArray();
+        }
+
+        /// <summary>
+        /// Creates a new array of matrices that represent the global transform matrices of each joint in a
         /// <see cref="Skin"/>. (With a single <see cref="Animation"/> instance instead of an array)
         /// </summary>
         /// <param name="skin">A <see cref="Skin"/> instance to make the joint matrices from.</param>
@@ -77,5 +112,21 @@ namespace AppleScene.Helpers
 
             return jointMatrices;
         }
+    }
+    
+    /// <summary>
+    /// Represents an <see cref="Animation"/> instance along with how long the animation has been running for.
+    /// </summary>
+    public record ActiveAnimation
+    {
+        /// <summary>
+        /// The <see cref="Animation"/> instance.
+        /// </summary>
+        public Animation Animation { get; init; }
+
+        /// <summary>
+        /// How long the animation has been running for.
+        /// </summary>
+        public TimeSpan CurrentTime;
     }
 }
