@@ -2,6 +2,8 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Linq;
 using System.Runtime.InteropServices;
 using AppleScene.Helpers;
 using Microsoft.Xna.Framework;
@@ -113,6 +115,36 @@ namespace AppleScene.Rendering
                     ActiveAnimations.RemoveAt(i);
                 }
             }
+        }
+
+        /// <summary>
+        /// Adds an animation to the <see cref="ActiveAnimations"/> list and therefore declaring it as active. Does not
+        /// add to <see cref="ActiveAnimations"/> if the animation parameter given is already referenced in
+        /// <see cref="ActiveAnimations"/>. If the animation parameter given does not exist in
+        /// <see cref="Animations"/>, the animation will still be added, but the model may not be animated or displayed
+        /// correctly.
+        /// </summary>
+        /// <param name="animation">The <see cref="Animation"/> instance to activate.</param>
+        public void ActivateAnimation(Animation animation)
+        {
+            //reminder that we're only seeing if the "animation" parameter is reference. not an actual equity check.
+            if (ActiveAnimations.Any(e => e.Animation == animation))
+            {
+                Debug.WriteLine($"The animation parameter given is already active. Animation object: {animation}");
+                return;
+            }
+
+            if (Animations.Any(e => e == animation))
+            {
+                Debug.WriteLine($"The animation parameter given. does not exist in the Animations property. The " +
+                                $"model may not be animated correctly. Animation object: {animation}");
+            }
+            
+            ActiveAnimations.Add(new ActiveAnimation
+            {
+                Animation = animation,
+                CurrentTime = TimeSpan.Zero
+            });
         }
 
         /// <summary>
