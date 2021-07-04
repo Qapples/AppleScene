@@ -45,10 +45,7 @@ namespace AppleScene.Rendering
         /// and projection matrices that influence where the mesh will be drawn and skinning/joints behavior.</param>
         /// <param name="skin">Optional <see cref="Skin"/> instance that defines skinning data so that the mesh
         /// can be influenced by animation.</param>
-        /// <param name="animations">Optional <see cref="ImmutableArray{T}"/> that represents a list of all the
-        /// animations the mesh is capable of using.</param>
-        public MeshData(Mesh mesh, GraphicsDevice graphicsDevice, Effect effect, Skin? skin = null,
-            ImmutableArray<Animation>? animations = null)
+        public MeshData(Mesh mesh, GraphicsDevice graphicsDevice, Effect effect, Skin? skin = null)
         {
             Primitives = new PrimitiveData[mesh.Primitives.Count];
             
