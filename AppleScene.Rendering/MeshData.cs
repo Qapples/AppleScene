@@ -22,23 +22,7 @@ namespace AppleScene.Rendering
         /// Data regarding each primitive in the loaded mesh
         /// </summary>
         public PrimitiveData[] Primitives { get; set; }
-        
-        /// <summary>
-        /// Represents a list of all animations that are currently active. Not all active animations necessarily have
-        /// to be from <see cref="Animations"/>, but it is highly recommended that they are.
-        /// </summary>
-        public List<ActiveAnimation> ActiveAnimations { get; init; }
-        
-        /// <summary>
-        /// A list of all the animations the mesh should be capable of using.
-        /// </summary>
-        public ImmutableArray<Animation> Animations { get; init; }
 
-        /// <summary>
-        /// Returns true if <see cref="Animations"/> has any animations contained within it. Otherwise, false.
-        /// </summary>
-        public bool HasAnimations => Animations.IsEmpty;
-        
         /// <summary>
         /// <see cref="GraphicsDevice"/> instance used to draw the mesh and to create <see cref="VertexBuffer"/> and
         /// <see cref="IndexBuffer"/> instances.
@@ -74,8 +58,6 @@ namespace AppleScene.Rendering
             }
             
             (GraphicsDevice, Effect) = (graphicsDevice, effect);
-            (Animations, ActiveAnimations) = (animations ?? ImmutableArray<Animation>.Empty,
-                new List<ActiveAnimation>());
         }
 
         /// <summary>
@@ -90,61 +72,20 @@ namespace AppleScene.Rendering
         /// <param name="projectionMatrix">The projection matrix that represents certain properties of the viewer
         /// (field of view, render distance, etc.) This parameter has no effect if the Effect property does not
         /// implement <see cref="IEffectMatrices"/>.</param>
-        /// <param name="elapsedTime"></param>
+        /// <param name="animations">This represents the animations that will be applied to <see cref="Skin"/>. Each
+        /// <see cref="ActiveAnimation"/> instance also comes with a <see cref="ActiveAnimation.CurrentTime"/> that
+        /// indicates how long the animation has been running for. To represent a lack of animations, pass
+        /// <see cref="ReadOnlySpan{T}.Empty"/> to indicate so.</param>
         /// <param name="rasterizerState">The <see cref="RasterizerState"/> the stored <see cref="GraphicsDevice"/>
         /// will use when rendering the mesh.</param>
-        public void Draw(in Matrix worldMatrix, in Matrix viewMatrix, in Matrix projectionMatrix, 
-            in TimeSpan elapsedTime, RasterizerState rasterizerState)
+        public void Draw(in Matrix worldMatrix, in Matrix viewMatrix, in Matrix projectionMatrix,
+            in ReadOnlySpan<ActiveAnimation> animations, RasterizerState rasterizerState)
         {
             foreach (var primitive in Primitives)
             {
-                //we can get away with passing a List as a Span here because we won't be adding or removing anything
-                //from the list during drawing.
-                primitive.Draw(in worldMatrix, in viewMatrix, in projectionMatrix,
-                    CollectionsMarshal.AsSpan(ActiveAnimations), Effect, rasterizerState);
+                primitive.Draw(in worldMatrix, in viewMatrix, in projectionMatrix, in animations, Effect,
+                    rasterizerState);
             }
-            
-            //Update ActiveAnimations
-            for (int i = ActiveAnimations.Count - 1; i > -1; i--)
-            {
-                ref TimeSpan currentTime = ref ActiveAnimations[i].CurrentTime;
-                currentTime += elapsedTime;
-
-                if ((float) currentTime.TotalSeconds >= ActiveAnimations[i].Animation.Duration)
-                {
-                    ActiveAnimations.RemoveAt(i);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Adds an animation to the <see cref="ActiveAnimations"/> list and therefore declaring it as active. Does not
-        /// add to <see cref="ActiveAnimations"/> if the animation parameter given is already referenced in
-        /// <see cref="ActiveAnimations"/>. If the animation parameter given does not exist in
-        /// <see cref="Animations"/>, the animation will still be added, but the model may not be animated or displayed
-        /// correctly.
-        /// </summary>
-        /// <param name="animation">The <see cref="Animation"/> instance to activate.</param>
-        public void ActivateAnimation(Animation animation)
-        {
-            //reminder that we're only seeing if the "animation" parameter is reference. not an actual equity check.
-            if (ActiveAnimations.Any(e => e.Animation == animation))
-            {
-                Debug.WriteLine($"The animation parameter given is already active. Animation object: {animation}");
-                return;
-            }
-
-            if (Animations.Any(e => e == animation))
-            {
-                Debug.WriteLine($"The animation parameter given. does not exist in the Animations property. The " +
-                                $"model may not be animated correctly. Animation object: {animation}");
-            }
-            
-            ActiveAnimations.Add(new ActiveAnimation
-            {
-                Animation = animation,
-                CurrentTime = TimeSpan.Zero
-            });
         }
 
         /// <summary>
@@ -154,7 +95,7 @@ namespace AppleScene.Rendering
         {
             //call this so that any derived types with a finalizer doesn't have to do this
             GC.SuppressFinalize(this);
-            
+
             for (int i = 0; i < Primitives.Length; i++)
             {
                 Primitives[i].Dispose();

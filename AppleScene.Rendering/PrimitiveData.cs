@@ -91,9 +91,10 @@ namespace AppleScene.Rendering
         /// <param name="projectionMatrix">The projection matrix that represents certain properties of the viewer
         /// (field of view, render distance, etc.) This parameter has no effect if the Effect property does not
         /// implement <see cref="IEffectMatrices"/>.</param>
-        /// <param name="animations">If the primitive has animations, then this will represent the animations that will
-        /// be applied to <see cref="Skin"/>. Each <see cref="ActiveAnimation"/> instance also comes with a
-        /// <see cref="TimeSpan"/> representing how long the animation has been active for.</param>
+        /// <param name="animations">This represents the animations that will be applied to <see cref="Skin"/>. Each
+        /// <see cref="ActiveAnimation"/> instance also comes with a <see cref="ActiveAnimation.CurrentTime"/> that
+        /// indicates how long the animation has been running for. To represent a lack of animations, pass
+        /// <see cref="ReadOnlySpan{T}.Empty"/> to indicate so.</param>
         /// <param name="effect">An <see cref="Effect"/> instance that influences the way the primitive is drawn.
         /// This parameter must implement <see cref="IEffectMatrices"/> to apply world, view, and projection matrices.
         /// In addition, this parameter must implement <see cref="IEffectBones"/> for skinning, joints, and animation

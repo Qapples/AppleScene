@@ -116,7 +116,7 @@ namespace AppleScene.Helpers
     /// <summary>
     /// Represents an <see cref="Animation"/> instance along with how long the animation has been running for.
     /// </summary>
-    public record ActiveAnimation
+    public sealed record ActiveAnimation
     {
         /// <summary>
         /// The <see cref="Animation"/> instance.
