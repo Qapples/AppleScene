@@ -42,7 +42,7 @@ namespace AppleScene.Helpers
 
                 jointMatrices[i] = jointMatrix;
             }
-
+            
             return jointMatrices.ToArray();
         }
 
@@ -113,6 +113,7 @@ namespace AppleScene.Helpers
         }
     }
     
+#nullable enable
     /// <summary>
     /// Represents an <see cref="Animation"/> instance along with how long the animation has been running for.
     /// </summary>
@@ -127,10 +128,17 @@ namespace AppleScene.Helpers
         /// Determines if the animation is active or not.
         /// </summary>
         public bool IsActive { get; set; }
+        
+        /// <summary>
+        /// Represents an identifier for the ActiveAnimation. If null, then the ActiveAnimation does not have an ID.
+        /// <br/> Note: not necessarily <see cref="SharpGLTF.Schema2.Animation.Name"/>.
+        /// </summary>
+        public string? Id { get; set; }
 
         /// <summary>
         /// How long the animation has been running for.
         /// </summary>
+        // Not a property here because we want to access this field directly.
         public TimeSpan CurrentTime;
     }
 }
