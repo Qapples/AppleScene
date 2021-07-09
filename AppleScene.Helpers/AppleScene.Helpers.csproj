@@ -10,7 +10,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\AppleScene\AppleScene.Skinning.csproj" />
+      <ProjectReference Include="..\AppleScene.Skinning\AppleScene.Skinning.csproj" />
     </ItemGroup>
-
 </Project>
