@@ -6,7 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.1986-develop" />
+      <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.2000-develop" />
       <PackageReference Include="SharpGLTF.Core" Version="1.0.0-alpha0023" />
     </ItemGroup>
 
