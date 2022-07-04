@@ -16,6 +16,11 @@ namespace AppleScene.Helpers
         //improve it. It's not really a big deal either way.
         
         //TODO: Add docs for both CopyJointMatrices overloads 
+
+        //both of these "param buffers" are used to call the CopyJointMatrices with just one animation without creating
+        //more arrays than necessary.
+        private static readonly Animation[] AnimParamBuffer = new Animation[1];
+        private static readonly ActiveAnimation[] ActiveAnimParamBuffer = new ActiveAnimation[1];
         
         public static Matrix[] CopyJointMatrices(this Skin skin, IList<Animation> animations,
             Matrix[] jointMatrices, float currentTime)
@@ -84,7 +89,22 @@ namespace AppleScene.Helpers
 
             return jointMatrices;
         }
-        
+
+        public static Matrix[] CopyJointMatrices(this Skin skin, Animation animation, Matrix[] jointMatrices,
+            float currentTime)
+        {
+            AnimParamBuffer[0] = animation;
+
+            return skin.CopyJointMatrices(AnimParamBuffer, jointMatrices, currentTime);
+        }
+
+        public static Matrix[] CopyJointMatrices(this Skin skin, ActiveAnimation animation, Matrix[] jointMatrices)
+        {
+            ActiveAnimParamBuffer[0] = animation;
+
+            return skin.CopyJointMatrices(ActiveAnimParamBuffer, jointMatrices);
+        }
+
         /// <summary>
         /// Creates a new array of matrices that represent the global transform matrices of each joint in a
         /// <see cref="Skin"/>
@@ -117,6 +137,20 @@ namespace AppleScene.Helpers
             Matrix[] jointMatrices = new Matrix[skin.JointsCount];
 
             return skin.CopyJointMatrices(animations, jointMatrices);
+        }
+
+        public static Matrix[] GetJointMatrices(this Skin skin, Animation animation, float currentTime)
+        {
+            Matrix[] jointMatrices = new Matrix[skin.JointsCount];
+            
+            return skin.CopyJointMatrices(animation, jointMatrices, currentTime);
+        }
+
+        public static Matrix[] GetJointMatrices(this Skin skin, ActiveAnimation animation)
+        {
+            Matrix[] jointMatrices = new Matrix[skin.JointsCount];
+
+            return skin.CopyJointMatrices(animation, jointMatrices);
         }
 
         /// <summary>
