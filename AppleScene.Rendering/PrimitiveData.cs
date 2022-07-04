@@ -25,7 +25,8 @@ namespace AppleScene.Rendering
         /// Represents the skin of the primitive. If null, then the primitive has no skin.
         /// </summary>
         public Skin? Skin { get; private set; }
-        
+
+        private Matrix[]? _jointMatrices;
         
         private readonly VertexBuffer _vertexBuffer;
         private readonly IndexBuffer _indexBuffer;
@@ -52,6 +53,11 @@ namespace AppleScene.Rendering
                 (vertexData, skin, indexBuffer, graphicsDevice);
 
             _vertexBuffer = vertexData.GenerateVertexBuffer(graphicsDevice);
+
+            if (skin is not null)
+            {
+                _jointMatrices = new Matrix[skin.JointsCount];
+            }
         }
 
         /// <summary>
@@ -77,6 +83,11 @@ namespace AppleScene.Rendering
                 (VertexData.GenerateVertexBuffer(graphicsDevice), primitive.GetIndexBuffer(graphicsDevice));
 
             _graphicsDevice = graphicsDevice;
+            
+            if (skin is not null)
+            {
+                _jointMatrices = new Matrix[skin.JointsCount];
+            }
         }
 
         /// <summary>
@@ -104,7 +115,7 @@ namespace AppleScene.Rendering
         // we're using a ReadOnlySpan here for compatibility purposes (it can reference anything without creating any
         // additional copies (I think)).
         public void Draw(in Matrix worldMatrix, in Matrix viewMatrix, in Matrix projectionMatrix,
-            in ReadOnlySpan<ActiveAnimation> animations, Effect effect, RasterizerState rasterizerState)
+            IList<ActiveAnimation> animations, Effect effect, RasterizerState rasterizerState)
         {
             RasterizerState prevState = _graphicsDevice.RasterizerState;
             _graphicsDevice.RasterizerState = rasterizerState;
@@ -118,9 +129,9 @@ namespace AppleScene.Rendering
                 (matrices.World, matrices.View, matrices.Projection) = (worldMatrix, viewMatrix, projectionMatrix);
             }
 
-            if (effect is IEffectBones bones && Skin is not null && !animations.IsEmpty)
+            if (effect is IEffectBones bones && Skin is not null && animations.Count > 0)
             {
-                bones.SetBoneTransforms(Skin.GetJointMatrices(animations));
+                bones.SetBoneTransforms(Skin.CopyJointMatrices(animations, _jointMatrices));
             }
 
             foreach (EffectPass pass in effect.CurrentTechnique.Passes)

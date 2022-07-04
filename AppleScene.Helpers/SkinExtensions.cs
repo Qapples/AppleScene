@@ -12,24 +12,24 @@ namespace AppleScene.Helpers
     /// </summary>
     public static class SkinExtensions
     {
-        /// <summary>
-        /// Creates a new array of matrices that represent the global transform matrices of each joint in a
-        /// <see cref="Skin"/>
-        /// </summary>
-        /// <param name="skin">A <see cref="Skin"/> instance to make the joint matrices from.</param>
-        /// <param name="animations">An array of <see cref="Animation"/> that will influence each joint matrix
-        /// provided a float value representing time.</param>
-        /// <param name="currentTime">Represents how long the animation has been occuring for in seconds.</param>
-        /// <returns>An array of global-space matrices for each joint in a <see cref="Skin"/>.</returns>
-        //animations is a ReadOnlySpan here for compatibility purposes.
-        public static Matrix[] GetJointMatrices(this Skin skin, in ReadOnlySpan<Animation> animations, float currentTime)
+        //I know we are repeating quite a bit for both overloads of CopyJointMatrices but I don't know how to elegantly
+        //improve it. It's not really a big deal either way.
+        
+        //TODO: Add docs for both CopyJointMatrices overloads 
+        
+        public static Matrix[] CopyJointMatrices(this Skin skin, IList<Animation> animations,
+            Matrix[] jointMatrices, float currentTime)
         {
-            Matrix[] jointMatrices = new Matrix[skin.JointsCount];
-
+            if (jointMatrices.Length < skin.JointsCount)
+            {
+                throw new IndexOutOfRangeException($"Size of joint matrices array ({jointMatrices.Length}) is " +
+                                                   $"smaller than the number of joints in the skin ({skin.JointsCount}). ");
+            }
+            
             //there is usually only one visual parent, and that parent would be the node of the entire model.
             //(not the model root!). This baseNode is used in the calculation of Joint matrices.
             Node baseNodeOfSkin = skin.VisualParents.First();
-
+            
             for (int i = 0; i < skin.JointsCount; i++)
             {
                 (Node joint, Matrix inverseBindMatrix) = skin.GetJoint(i);
@@ -42,8 +42,64 @@ namespace AppleScene.Helpers
 
                 jointMatrices[i] = jointMatrix;
             }
-            
-            return jointMatrices.ToArray();
+
+            return jointMatrices;
+        }
+        
+        /// <summary>
+        /// Creates a new array of matrices that represent the global transform matrices of each joint in a
+        /// <see cref="Skin"/>. (With a collection of <see cref="ActiveAnimation"/> instances instead)
+        /// </summary>
+        /// <param name="skin">A <see cref="Skin"/> instance to make the joint matrices from.</param>
+        /// <param name="animations">An array of <see cref="ActiveAnimation"/> instances that will influence
+        /// each joint matrix with a <see cref="TimeSpan"/> a value representing how long the animation has been
+        /// active for.</param>
+        public static Matrix[] CopyJointMatrices(this Skin skin, IList<ActiveAnimation> animations,
+            Matrix[] jointMatrices)
+        {
+            if (jointMatrices.Length < skin.JointsCount)
+            {
+                throw new IndexOutOfRangeException($"Size of joint matrices array ({jointMatrices.Length}) is " +
+                                                   $"smaller than the number of joints in the skin ({skin.JointsCount}). ");
+            }
+
+            //there is usually only one visual parent, and that parent would be the node of the entire model.
+            //(not the model root!). This baseNode is used in the calculation of Joint matrices.
+            Node baseNodeOfSkin = skin.VisualParents.First();
+
+            for (int i = 0; i < skin.JointsCount; i++)
+            {
+                (Node joint, Matrix inverseBindMatrix) = skin.GetJoint(i);
+                
+                Matrix jointMatrix = inverseBindMatrix * Matrix.Invert(baseNodeOfSkin.WorldMatrix);
+                
+                foreach (ActiveAnimation animation in animations)
+                {
+                    jointMatrix *=
+                        joint.GetWorldMatrix(animation.Animation, (float) animation.CurrentTime.TotalSeconds);
+                }
+
+                jointMatrices[i] = jointMatrix;
+            }
+
+            return jointMatrices;
+        }
+        
+        /// <summary>
+        /// Creates a new array of matrices that represent the global transform matrices of each joint in a
+        /// <see cref="Skin"/>
+        /// </summary>
+        /// <param name="skin">A <see cref="Skin"/> instance to make the joint matrices from.</param>
+        /// <param name="animations">An array of <see cref="Animation"/> that will influence each joint matrix
+        /// provided a float value representing time.</param>
+        /// <param name="currentTime">Represents how long the animation has been occuring for in seconds.</param>
+        /// <returns>An array of global-space matrices for each joint in a <see cref="Skin"/>.</returns>
+        //animations is a ReadOnlySpan here for compatibility purposes.
+        public static Matrix[] GetJointMatrices(this Skin skin, IList<Animation> animations, float currentTime)
+        {
+            Matrix[] jointMatrices = new Matrix[skin.JointsCount];
+
+            return skin.CopyJointMatrices(animations, jointMatrices, currentTime);
         }
 
         /// <summary>
@@ -56,42 +112,12 @@ namespace AppleScene.Helpers
         /// active for.</param>
         // we're repeating code here so that we don't have to create any more arrays or lists than we need to and
         // instead use ActiveAnimation instances directly.
-        public static Matrix[] GetJointMatrices(this Skin skin, in ReadOnlySpan<ActiveAnimation> animations)
+        public static Matrix[] GetJointMatrices(this Skin skin, IList<ActiveAnimation> animations)
         {
             Matrix[] jointMatrices = new Matrix[skin.JointsCount];
 
-            //there is usually only one visual parent, and that parent would be the node of the entire model.
-            //(not the model root!). This baseNode is used in the calculation of Joint matrices.
-            Node baseNodeOfSkin = skin.VisualParents.First();
-
-            for (int i = 0; i < skin.JointsCount; i++)
-            {
-                (Node joint, Matrix inverseBindMatrix) = skin.GetJoint(i);
-
-                Matrix jointMatrix = inverseBindMatrix * Matrix.Invert(baseNodeOfSkin.WorldMatrix);
-                foreach (ActiveAnimation animation in animations)
-                {
-                    jointMatrix *=
-                        joint.GetWorldMatrix(animation.Animation, (float) animation.CurrentTime.TotalSeconds);
-                }
-
-                jointMatrices[i] = jointMatrix;
-            }
-
-            return jointMatrices.ToArray();
+            return skin.CopyJointMatrices(animations, jointMatrices);
         }
-
-        /// <summary>
-        /// Creates a new array of matrices that represent the global transform matrices of each joint in a
-        /// <see cref="Skin"/>. (With a single <see cref="Animation"/> instance instead of an array)
-        /// </summary>
-        /// <param name="skin">A <see cref="Skin"/> instance to make the joint matrices from.</param>
-        /// <param name="animation">An <see cref="Animation"/> that will influence each joint matrix provided a float
-        /// value representing time.</param>
-        /// <param name="currentTime">Represents how long the animation has been occuring for in seconds.</param>
-        /// <returns>An array of global-space matrices for each joint in a <see cref="Skin"/>.</returns>
-        public static Matrix[] GetJointMatrices(this Skin skin, Animation animation, float currentTime) =>
-            skin.GetJointMatrices(new ReadOnlySpan<Animation>(new[] {animation}), currentTime);
 
         /// <summary>
         /// Returns an array of matrices that will result in the given <see cref="Skin"/> instance to be in it's bind

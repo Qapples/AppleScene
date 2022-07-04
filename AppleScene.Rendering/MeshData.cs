@@ -76,11 +76,11 @@ namespace AppleScene.Rendering
         /// <param name="rasterizerState">The <see cref="RasterizerState"/> the stored <see cref="GraphicsDevice"/>
         /// will use when rendering the mesh.</param>
         public void Draw(in Matrix worldMatrix, in Matrix viewMatrix, in Matrix projectionMatrix,
-            in ReadOnlySpan<ActiveAnimation> animations, RasterizerState rasterizerState)
+            IList<ActiveAnimation> animations, RasterizerState rasterizerState)
         {
             foreach (var primitive in Primitives)
             {
-                primitive.Draw(in worldMatrix, in viewMatrix, in projectionMatrix, in animations, Effect,
+                primitive.Draw(in worldMatrix, in viewMatrix, in projectionMatrix, animations, Effect,
                     rasterizerState);
             }
         }
