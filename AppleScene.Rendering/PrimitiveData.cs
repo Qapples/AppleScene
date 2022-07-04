@@ -131,19 +131,9 @@ namespace AppleScene.Rendering
 
             if (effect is IEffectBones bones && Skin is not null && _jointMatrices is not null)
             {
-                if (animations.Count > 0)
-                {
-                    bones.SetBoneTransforms(Skin.CopyJointMatrices(animations, _jointMatrices));
-                }
-                else
-                {
-                    for (int i = 0; i < _jointMatrices.Length; i++)
-                    {
-                        _jointMatrices[i] = Matrix.Identity;
-                    }
-                    
-                    bones.SetBoneTransforms(_jointMatrices);
-                }
+                bones.SetBoneTransforms(animations.Count > 0
+                    ? Skin.CopyJointMatrices(animations, _jointMatrices)
+                    : Skin.CopyBindMatrices(_jointMatrices));
             }
 
             foreach (EffectPass pass in effect.CurrentTechnique.Passes)

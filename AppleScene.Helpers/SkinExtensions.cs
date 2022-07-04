@@ -153,6 +153,22 @@ namespace AppleScene.Helpers
             return skin.CopyJointMatrices(animation, jointMatrices);
         }
 
+        public static Matrix[] CopyBindMatrices(this Skin skin, Matrix[] bindMatrices)
+        {
+            if (bindMatrices.Length < skin.JointsCount)
+            {
+                throw new IndexOutOfRangeException($"Size of bind matrices array ({bindMatrices.Length}) is " +
+                                                   $"smaller than the number of joints in the skin ({skin.JointsCount}). ");
+            }
+            
+            for (int i = 0; i < bindMatrices.Length; i++)
+            {
+                bindMatrices[i] = Matrix.Identity;
+            }
+
+            return bindMatrices;
+        }
+
         /// <summary>
         /// Returns an array of matrices that will result in the given <see cref="Skin"/> instance to be in it's bind
         /// position
@@ -163,13 +179,8 @@ namespace AppleScene.Helpers
         public static Matrix[] GetBindMatrices(this Skin skin)
         {
             Matrix[] jointMatrices = new Matrix[skin.JointsCount];
-
-            for (int i = 0; i < jointMatrices.Length; i++)
-            {
-                jointMatrices[i] = Matrix.Identity;
-            }
-
-            return jointMatrices;
+            
+            return skin.CopyBindMatrices(jointMatrices);
         }
     }
     
