@@ -199,6 +199,12 @@ namespace AppleScene.Helpers
         /// Determines if the animation is active or not.
         /// </summary>
         public bool IsActive { get; set; }
+
+        /// <summary>
+        /// Determines if the animation is looping or not. If this value is true, then the animation will start again
+        /// once it has ended.
+        /// </summary>
+        public bool IsLooping { get; set; }
         
         /// <summary>
         /// Represents an identifier for the ActiveAnimation. If null, then the ActiveAnimation does not have an ID.
