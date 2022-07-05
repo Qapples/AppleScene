@@ -128,7 +128,7 @@ namespace AppleScene.Rendering
             {
                 (matrices.World, matrices.View, matrices.Projection) = (worldMatrix, viewMatrix, projectionMatrix);
             }
-
+            
             if (effect is IEffectBones bones && Skin is not null && _jointMatrices is not null)
             {
                 bones.SetBoneTransforms(animations.Count > 0
