@@ -72,16 +72,19 @@ namespace AppleScene.Rendering
         /// <param name="animations">This represents the animations that will be applied to <see cref="Skin"/>. Each
         /// <see cref="ActiveAnimation"/> instance also comes with a <see cref="ActiveAnimation.CurrentTime"/> that
         /// indicates how long the animation has been running for. To represent a lack of animations, pass
-        /// <see cref="ReadOnlySpan{T}.Empty"/> to indicate so.</param>
+        /// <see cref="Array.Empty{T}"/> to indicate so.</param>
+        /// <param name="jointTransforms">These matrices will be applied to the joints of the <see cref="Skin"/> of each
+        /// <see cref="PrimitiveData"/> in <see cref="Primitives"/>. Pass <see cref="ReadOnlySpan{T}.Empty"/> to
+        /// indicate that no joint transformations outside of animations will be applied.</param>
         /// <param name="rasterizerState">The <see cref="RasterizerState"/> the stored <see cref="GraphicsDevice"/>
         /// will use when rendering the mesh.</param>
         public void Draw(in Matrix worldMatrix, in Matrix viewMatrix, in Matrix projectionMatrix,
-            IList<ActiveAnimation> animations, RasterizerState rasterizerState)
+            IList<ActiveAnimation> animations, in ReadOnlySpan<Matrix> jointTransforms, RasterizerState rasterizerState)
         {
             foreach (var primitive in Primitives)
             {
-                primitive.Draw(in worldMatrix, in viewMatrix, in projectionMatrix, animations, Effect,
-                    rasterizerState);
+                primitive.Draw(in worldMatrix, in viewMatrix, in projectionMatrix, animations, in jointTransforms,
+                    Effect, rasterizerState);
             }
         }
 

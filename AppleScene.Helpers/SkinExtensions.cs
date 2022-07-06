@@ -74,9 +74,10 @@ namespace AppleScene.Helpers
 
             for (int i = 0; i < skin.JointsCount; i++)
             {
-                (Node joint, Matrix inverseBindMatrix) = skin.GetJoint(i);
-                
-                Matrix jointMatrix = inverseBindMatrix * Matrix.Invert(baseNodeOfSkin.WorldMatrix);
+                (Node joint, Matrix4x4 inverseBindMatrix) = skin.GetJoint(i);
+
+                Matrix4x4.Invert(baseNodeOfSkin.WorldMatrix, out var invertedWorldMatrix);
+                Matrix4x4 jointMatrix = inverseBindMatrix * invertedWorldMatrix;
                 
                 foreach (ActiveAnimation animation in animations)
                 {
@@ -84,7 +85,7 @@ namespace AppleScene.Helpers
                         joint.GetWorldMatrix(animation.Animation, (float) animation.CurrentTime.TotalSeconds);
                 }
 
-                jointMatrices[i] = jointMatrix;
+                jointMatrices[i] = jointMatrix; //implicit conversion
             }
 
             return jointMatrices;

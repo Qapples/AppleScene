@@ -105,7 +105,10 @@ namespace AppleScene.Rendering
         /// <param name="animations">This represents the animations that will be applied to <see cref="Skin"/>. Each
         /// <see cref="ActiveAnimation"/> instance also comes with a <see cref="ActiveAnimation.CurrentTime"/> that
         /// indicates how long the animation has been running for. To represent a lack of animations, pass
-        /// <see cref="ReadOnlySpan{T}.Empty"/> to indicate so.</param>
+        /// <see cref="Array.Empty{T}"/> to indicate so.</param>
+        /// <param name="jointTransforms">These matrices will be applied to the joints of the <see cref="Skin"/>.
+        /// Pass <see cref="ReadOnlySpan{T}.Empty"/> to indicate that no joint transformations outside of animations
+        /// will be applied. </param>
         /// <param name="effect">An <see cref="Effect"/> instance that influences the way the primitive is drawn.
         /// This parameter must implement <see cref="IEffectMatrices"/> to apply world, view, and projection matrices.
         /// In addition, this parameter must implement <see cref="IEffectBones"/> for skinning, joints, and animation
@@ -115,7 +118,8 @@ namespace AppleScene.Rendering
         // we're using a ReadOnlySpan here for compatibility purposes (it can reference anything without creating any
         // additional copies (I think)).
         public void Draw(in Matrix worldMatrix, in Matrix viewMatrix, in Matrix projectionMatrix,
-            IList<ActiveAnimation> animations, Effect effect, RasterizerState rasterizerState)
+            IList<ActiveAnimation> animations, in ReadOnlySpan<Matrix> jointTransforms, Effect effect,
+            RasterizerState rasterizerState)
         {
             RasterizerState prevState = _graphicsDevice.RasterizerState;
             _graphicsDevice.RasterizerState = rasterizerState;
@@ -131,9 +135,21 @@ namespace AppleScene.Rendering
             
             if (effect is IEffectBones bones && Skin is not null && _jointMatrices is not null)
             {
-                bones.SetBoneTransforms(animations.Count > 0
-                    ? Skin.CopyJointMatrices(animations, _jointMatrices)
-                    : Skin.CopyBindMatrices(_jointMatrices));
+                if (animations.Count > 0)
+                {
+                    Skin.CopyJointMatrices(animations, _jointMatrices);
+                }
+                else
+                {
+                    Skin.CopyBindMatrices(_jointMatrices);
+                }
+
+                for (int i = 0; i < _jointMatrices.Length; i++)
+                {
+                    _jointMatrices[i] *= jointTransforms[i];
+                }
+                
+                bones.SetBoneTransforms(_jointMatrices);
             }
 
             foreach (EffectPass pass in effect.CurrentTechnique.Passes)
