@@ -144,7 +144,7 @@ namespace AppleScene.Rendering
                     Skin.CopyBindMatrices(_jointMatrices);
                 }
 
-                for (int i = 0; i < _jointMatrices.Length; i++)
+                for (int i = 0; i < jointTransforms.Length; i++)
                 {
                     _jointMatrices[i] *= jointTransforms[i];
                 }
