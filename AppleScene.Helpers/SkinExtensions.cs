@@ -21,46 +21,9 @@ namespace AppleScene.Helpers
         //more arrays than necessary.
         private static readonly Animation[] AnimParamBuffer = new Animation[1];
         private static readonly ActiveAnimation[] ActiveAnimParamBuffer = new ActiveAnimation[1];
-        
-        public static Matrix[] CopyJointMatrices(this Skin skin, IList<Animation> animations,
-            Matrix[] jointMatrices, float currentTime)
-        {
-            if (jointMatrices.Length < skin.JointsCount)
-            {
-                throw new IndexOutOfRangeException($"Size of joint matrices array ({jointMatrices.Length}) is " +
-                                                   $"smaller than the number of joints in the skin ({skin.JointsCount}). ");
-            }
-            
-            //there is usually only one visual parent, and that parent would be the node of the entire model.
-            //(not the model root!). This baseNode is used in the calculation of Joint matrices.
-            Node baseNodeOfSkin = skin.VisualParents.First();
-            
-            for (int i = 0; i < skin.JointsCount; i++)
-            {
-                (Node joint, Matrix inverseBindMatrix) = skin.GetJoint(i);
 
-                Matrix jointMatrix = inverseBindMatrix * Matrix.Invert(baseNodeOfSkin.WorldMatrix);
-                foreach (Animation animation in animations)
-                {
-                    jointMatrix *= joint.GetWorldMatrix(animation, currentTime);
-                }
-
-                jointMatrices[i] = jointMatrix;
-            }
-
-            return jointMatrices;
-        }
-        
-        /// <summary>
-        /// Creates a new array of matrices that represent the global transform matrices of each joint in a
-        /// <see cref="Skin"/>. (With a collection of <see cref="ActiveAnimation"/> instances instead)
-        /// </summary>
-        /// <param name="skin">A <see cref="Skin"/> instance to make the joint matrices from.</param>
-        /// <param name="animations">An array of <see cref="ActiveAnimation"/> instances that will influence
-        /// each joint matrix with a <see cref="TimeSpan"/> a value representing how long the animation has been
-        /// active for.</param>
-        public static Matrix[] CopyJointMatrices(this Skin skin, IList<ActiveAnimation> animations,
-            Matrix[] jointMatrices)
+        public static Matrix[] CopyJointMatrices(this Skin skin,
+            IEnumerable<(Animation animation, float currentTime)> animations, Matrix[] jointMatrices)
         {
             if (jointMatrices.Length < skin.JointsCount)
             {
@@ -74,7 +37,7 @@ namespace AppleScene.Helpers
 
             bool firstIter = true;
 
-            foreach (ActiveAnimation animation in animations)
+            foreach (var (animation, currentTime) in animations)
             {
                 for (int i = 0; i < skin.JointsCount; i++)
                 {
@@ -84,7 +47,7 @@ namespace AppleScene.Helpers
                     Matrix4x4 jointMatrix = inverseBindMatrix * invertedWorldMatrix;
 
                     jointMatrix *=
-                        joint.GetWorldMatrix(animation.Animation, (float) animation.CurrentTime.TotalSeconds) *
+                        joint.GetWorldMatrix(animation, currentTime) *
                         (firstIter ? Matrix4x4.Identity : jointMatrices[i].ToNumerics());
 
                     jointMatrices[i] = jointMatrix;
@@ -95,6 +58,26 @@ namespace AppleScene.Helpers
 
             return jointMatrices;
         }
+
+        public static Matrix[] CopyJointMatrices(this Skin skin, IList<Animation> animations,
+            Matrix[] jointMatrices, float currentTime) =>
+            skin.CopyJointMatrices(
+                from anim in animations 
+                select (anim, currentTime), jointMatrices);
+
+        /// <summary>
+        /// Creates a new array of matrices that represent the global transform matrices of each joint in a
+        /// <see cref="Skin"/>. (With a collection of <see cref="ActiveAnimation"/> instances instead)
+        /// </summary>
+        /// <param name="skin">A <see cref="Skin"/> instance to make the joint matrices from.</param>
+        /// <param name="animations">An array of <see cref="ActiveAnimation"/> instances that will influence
+        /// each joint matrix with a <see cref="TimeSpan"/> a value representing how long the animation has been
+        /// active for.</param>
+        public static Matrix[] CopyJointMatrices(this Skin skin, IList<ActiveAnimation> animations,
+            Matrix[] jointMatrices) =>
+            skin.CopyJointMatrices(
+                from anim in animations 
+                select (anim.Animation, (float) anim.CurrentTime.TotalSeconds), jointMatrices);
 
         public static Matrix[] CopyJointMatrices(this Skin skin, Animation animation, Matrix[] jointMatrices,
             float currentTime)

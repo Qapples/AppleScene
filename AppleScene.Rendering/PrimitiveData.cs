@@ -146,8 +146,11 @@ namespace AppleScene.Rendering
                 }
 
                 for (int i = 0; i < jointTransforms.Length; i++)
-                { 
-                    _jointMatrices[i] = jointTransforms[i];
+                {
+                    if (jointTransforms[i] != Matrix.Identity)
+                    {
+                        _jointMatrices[i] = jointTransforms[i];
+                    }
                 }
                 
                 bones.SetBoneTransforms(_jointMatrices);
