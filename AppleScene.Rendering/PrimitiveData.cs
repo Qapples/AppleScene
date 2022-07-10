@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using AppleScene.Helpers;
 using Microsoft.Xna.Framework;
@@ -145,8 +146,8 @@ namespace AppleScene.Rendering
                 }
 
                 for (int i = 0; i < jointTransforms.Length; i++)
-                {
-                    _jointMatrices[i] *= jointTransforms[i];
+                { 
+                    _jointMatrices[i] = jointTransforms[i];
                 }
                 
                 bones.SetBoneTransforms(_jointMatrices);

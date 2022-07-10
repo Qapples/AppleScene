@@ -72,20 +72,25 @@ namespace AppleScene.Helpers
             //(not the model root!). This baseNode is used in the calculation of Joint matrices.
             Node baseNodeOfSkin = skin.VisualParents.First();
 
-            for (int i = 0; i < skin.JointsCount; i++)
-            {
-                (Node joint, Matrix4x4 inverseBindMatrix) = skin.GetJoint(i);
+            bool firstIter = true;
 
-                Matrix4x4.Invert(baseNodeOfSkin.WorldMatrix, out var invertedWorldMatrix);
-                Matrix4x4 jointMatrix = inverseBindMatrix * invertedWorldMatrix;
-                
-                foreach (ActiveAnimation animation in animations)
+            foreach (ActiveAnimation animation in animations)
+            {
+                for (int i = 0; i < skin.JointsCount; i++)
                 {
+                    (Node joint, Matrix4x4 inverseBindMatrix) = skin.GetJoint(i);
+
+                    Matrix4x4.Invert(baseNodeOfSkin.WorldMatrix, out var invertedWorldMatrix);
+                    Matrix4x4 jointMatrix = inverseBindMatrix * invertedWorldMatrix;
+
                     jointMatrix *=
-                        joint.GetWorldMatrix(animation.Animation, (float) animation.CurrentTime.TotalSeconds);
+                        joint.GetWorldMatrix(animation.Animation, (float) animation.CurrentTime.TotalSeconds) *
+                        (firstIter ? Matrix4x4.Identity : jointMatrices[i].ToNumerics());
+
+                    jointMatrices[i] = jointMatrix;
                 }
 
-                jointMatrices[i] = jointMatrix; //implicit conversion
+                firstIter = false;
             }
 
             return jointMatrices;
@@ -197,9 +202,10 @@ namespace AppleScene.Helpers
         public Animation Animation { get; init; }
         
         /// <summary>
-        /// Determines if the animation is active or not.
+        /// Determines if the animation should update and move forward in time. If false, then this does NOT mean that
+        /// the animation is no longer active, it just means that <see cref="CurrentTime"/> will not be incremented.
         /// </summary>
-        public bool IsActive { get; set; }
+        public bool IsUpdating { get; set; }
 
         /// <summary>
         /// Determines if the animation is looping or not. If this value is true, then the animation will start again
