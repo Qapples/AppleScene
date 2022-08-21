@@ -34,6 +34,7 @@ namespace AppleScene.Helpers
             //there is usually only one visual parent, and that parent would be the node of the entire model.
             //(not the model root!). This baseNode is used in the calculation of Joint matrices.
             Matrix4x4 baseWorldMatrix = skin.VisualParents.FirstOrDefault()?.WorldMatrix ?? Matrix4x4.Identity;
+            Matrix4x4.Invert(baseWorldMatrix, out var invertedWorldMatrix);
 
             bool firstIter = true;
 
@@ -43,13 +44,11 @@ namespace AppleScene.Helpers
                 {
                     (Node joint, Matrix4x4 inverseBindMatrix) = skin.GetJoint(i);
 
-                    Matrix4x4.Invert(baseWorldMatrix, out var invertedWorldMatrix);
                     Matrix4x4 jointMatrix = inverseBindMatrix * invertedWorldMatrix;
- 
-                    jointMatrix *=
-                        joint.GetWorldMatrix(animation, currentTime) *
-                        (firstIter ? Matrix4x4.Identity : jointMatrices[i].ToNumerics());
-
+                    
+                    jointMatrix *= joint.GetWorldMatrix(animation, currentTime) *
+                                   (firstIter ? Matrix4x4.Identity : jointMatrices[i].ToNumerics());
+                    
                     jointMatrices[i] = jointMatrix;
                 }
 
