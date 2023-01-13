@@ -43,9 +43,9 @@ namespace AppleScene.Helpers
                 for (int i = 0; i < skin.JointsCount; i++)
                 {
                     (Node joint, Matrix4x4 inverseBindMatrix) = skin.GetJoint(i);
-
-                    Matrix4x4 jointMatrix = inverseBindMatrix * invertedWorldMatrix;
                     
+                    Matrix4x4 jointMatrix = inverseBindMatrix * invertedWorldMatrix;
+
                     jointMatrix *= joint.GetWorldMatrix(animation, currentTime) *
                                    (firstIter ? Matrix4x4.Identity : jointMatrices[i].ToNumerics());
                     
@@ -190,10 +190,12 @@ namespace AppleScene.Helpers
         public bool IsUpdating { get; set; }
 
         /// <summary>
-        /// Determines if the animation is looping or not. If this value is true, then the animation will start again
-        /// once it has ended.
+        /// Defines the behavior of an <see cref="ActiveAnimation"/> once
+        /// <see cref="ActiveAnimation.CurrentTime"/> exceeds <see>
+        ///     <cref>Animation.Duration</cref>
+        /// </see>
         /// </summary>
-        public bool IsLooping { get; set; }
+        public DurationExceededBehavior DurationExceededBehavior { get; set; }
         
         /// <summary>
         /// Represents an identifier for the ActiveAnimation. If null, then the ActiveAnimation does not have an ID.
@@ -206,5 +208,29 @@ namespace AppleScene.Helpers
         /// </summary>
         // Not a property here because we want to access this field directly.
         public TimeSpan CurrentTime;
+    }
+
+    /// <summary>
+    /// Defines the behavior of an <see cref="ActiveAnimation"/> once
+    /// <see cref="ActiveAnimation.CurrentTime"/> exceeds <see cref="Animation.Duration"/>
+    /// </summary>
+    public enum DurationExceededBehavior
+    {
+        /// <summary>
+        /// <see cref="ActiveAnimation.CurrentTime"/> will reset to zero and the animation will loop.
+        /// </summary>
+        Loop,
+        
+        /// <summary>
+        /// The <see cref="ActiveAnimation"/> will be deleted and the animation will cease playing.
+        /// </summary>
+        Kill,
+        
+        /// <summary>
+        /// The <see cref="ActiveAnimation"/> will continue to exist and <see cref="ActiveAnimation.CurrentTime"/> will
+        /// continue to increment beyond <see cref="Animation.Duration"/>. The animation will be motionless, but will
+        /// still be considered to be "active".
+        /// </summary>
+        Continue,
     }
 }
