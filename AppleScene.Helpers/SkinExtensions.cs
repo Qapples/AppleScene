@@ -38,7 +38,7 @@ namespace AppleScene.Helpers
 
             bool firstIter = true;
 
-            foreach (var (animation, currentTime) in animations)
+            foreach (var (animation, currentTime) in animations.Reverse())
             {
                 for (int i = 0; i < skin.JointsCount; i++)
                 {

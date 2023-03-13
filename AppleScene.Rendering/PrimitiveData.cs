@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using AppleScene.Helpers;
@@ -28,7 +29,13 @@ namespace AppleScene.Rendering
         public Skin? Skin { get; private set; }
 
         private Matrix[]? _jointMatrices;
-        
+
+        /// <summary>
+        /// Represent the joint matrices being passed to the shaders. If this <see cref="PrimitiveData"/> instance has
+        /// no joint matrices, then this <see cref="ReadOnlyCollection{T}"/> is empty.
+        /// </summary>
+        public ReadOnlyCollection<Matrix> JointMatrices => new(_jointMatrices ?? Array.Empty<Matrix>());
+
         private readonly VertexBuffer _vertexBuffer;
         private readonly IndexBuffer _indexBuffer;
 
