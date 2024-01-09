@@ -126,8 +126,8 @@ namespace AppleScene.Rendering
         // we're using a ReadOnlySpan here for compatibility purposes (it can reference anything without creating any
         // additional copies (I think)).
         public void Draw(in Matrix worldMatrix, in Matrix viewMatrix, in Matrix projectionMatrix,
-            IList<ActiveAnimation> animations, in ReadOnlySpan<Matrix> jointTransforms, Effect effect,
-            RasterizerState rasterizerState)
+            IEnumerable<(Animation Animation, float CurrentTime)> animations, in ReadOnlySpan<Matrix> jointTransforms,
+            Effect effect, RasterizerState rasterizerState)
         {
             RasterizerState prevState = _graphicsDevice.RasterizerState;
             _graphicsDevice.RasterizerState = rasterizerState;
@@ -143,15 +143,8 @@ namespace AppleScene.Rendering
             
             if (effect is IEffectBones bones && Skin is not null && _jointMatrices is not null)
             {
-                if (animations.Count > 0)
-                {
-                    Skin.CopyJointMatrices(animations, _jointMatrices);
-                }
-                else
-                {
-                    Skin.CopyBindMatrices(_jointMatrices);
-                }
-
+                Skin.CopyJointMatrices(animations, _jointMatrices);
+                
                 for (int i = 0; i < jointTransforms.Length; i++)
                 {
                     if (jointTransforms[i] != Matrix.Identity)
@@ -159,7 +152,7 @@ namespace AppleScene.Rendering
                         _jointMatrices[i] = jointTransforms[i];
                     }
                 }
-                
+
                 bones.SetBoneTransforms(_jointMatrices);
             }
 

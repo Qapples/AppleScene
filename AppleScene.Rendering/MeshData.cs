@@ -58,7 +58,7 @@ namespace AppleScene.Rendering
         }
 
         /// <summary>
-        /// Draws each of the <see cref="MeshPrimitive"/> instances. Also updates the animations in 
+        /// Draws each of the <see cref="MeshPrimitive"/> instances.
         /// </summary>
         /// <param name="worldMatrix">The world matrix that represents the scale, position, and rotation of the mesh to
         /// be drawn. This parameter is irrelevant if the effect parameter does not implement
@@ -69,19 +69,19 @@ namespace AppleScene.Rendering
         /// <param name="projectionMatrix">The projection matrix that represents certain properties of the viewer
         /// (field of view, render distance, etc.) This parameter has no effect if the Effect property does not
         /// implement <see cref="IEffectMatrices"/>.</param>
-        /// <param name="animations">This represents the animations that will be applied to <see cref="Skin"/>. Each
-        /// <see cref="ActiveAnimation"/> instance also comes with a <see cref="ActiveAnimation.CurrentTime"/> that
-        /// indicates how long the animation has been running for. To represent a lack of animations, pass
-        /// <see cref="Array.Empty{T}"/> to indicate so.</param>
+        /// <param name="animations">Represents the animations that will be applied to <see cref="Skin"/>. Each
+        /// animation in the collection is coupled with a float representing the current point of time in the animation
+        /// in seconds. To represent a lack of animations, pass <see cref="Array.Empty{T}"/>.</param>
         /// <param name="jointTransforms">These matrices will be applied to the joints of the <see cref="Skin"/> of each
         /// <see cref="PrimitiveData"/> in <see cref="Primitives"/>. Pass <see cref="ReadOnlySpan{T}.Empty"/> to
         /// indicate that no joint transformations outside of animations will be applied.</param>
         /// <param name="rasterizerState">The <see cref="RasterizerState"/> the stored <see cref="GraphicsDevice"/>
         /// will use when rendering the mesh.</param>
         public void Draw(in Matrix worldMatrix, in Matrix viewMatrix, in Matrix projectionMatrix,
-            IList<ActiveAnimation> animations, in ReadOnlySpan<Matrix> jointTransforms, RasterizerState rasterizerState)
+            IReadOnlyCollection<(Animation Animation, float CurrentTime)> animations, in ReadOnlySpan<Matrix> jointTransforms,
+            RasterizerState rasterizerState)
         {
-            foreach (var primitive in Primitives)
+            foreach (PrimitiveData primitive in Primitives)
             {
                 primitive.Draw(in worldMatrix, in viewMatrix, in projectionMatrix, animations, in jointTransforms,
                     Effect, rasterizerState);
