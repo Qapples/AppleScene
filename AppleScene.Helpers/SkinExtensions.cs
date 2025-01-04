@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 using SharpGLTF.Schema2;
 
 namespace AppleScene.Helpers
@@ -14,16 +16,15 @@ namespace AppleScene.Helpers
     {
         //I know we are repeating quite a bit for both overloads of CopyJointMatrices but I don't know how to elegantly
         //improve it. It's not really a big deal either way.
-        
+
         //TODO: Add docs for both CopyJointMatrices overloads 
 
-        private static readonly Dictionary<(Node Joint, Animation Animation, float TimeMs), Matrix4x4>
-            JointWorldMatrixCache = new();
-
+        private static readonly Dictionary<Animation, JointNode[]> JointCache = new();
+       
         //both of these "param buffers" are used to call the CopyJointMatrices with just one animation without creating
         //more arrays than necessary.
         private static readonly Animation[] AnimParamBuffer = new Animation[1];
-        
+
         public static Matrix[] CopyJointMatrices(this Skin skin,
             IEnumerable<(Animation animation, float currentTime)> animations, Matrix[] jointMatrices)
         {
@@ -42,30 +43,35 @@ namespace AppleScene.Helpers
 
             foreach (var (animation, currentTime) in animations.Reverse())
             {
-                for (int i = 0; i < skin.JointsCount; i++)
+                if (!JointCache.TryGetValue(animation, out var joints))
                 {
-                    (Node joint, Matrix4x4 inverseBindMatrix) = skin.GetJoint(i);
-                    Matrix4x4 jointMatrix = inverseBindMatrix * invertedWorldMatrix;
-
-                    //We are caching the world matrices obtained by using joint.GetWorldMatrix because using it directly
-                    //in a hotpath causes a memory leak (mass allocations of "FloatAccessor", according to Rider's
-                    //Dynamic Program Analysis). The docs acknowledge that joint.GetWorldMatrix is a convince method
-                    //and is flawed, but the alternative of caching the curve samplers does not solve the problem and
-                    //the memory leak is still there. Simply caching the world matrices fixes this problem and improves
-                    //both memory footprint and execution speed. If the time step is small (which in most scenarios,
-                    //it shouldn't be. we are talking a time step of around 1ms), problems may arise since a lot of
-                    //joint matrices will be cached.
-                    if (!JointWorldMatrixCache.TryGetValue((joint, animation, currentTime), out Matrix4x4 worldMatrix))
-                    {
-                        Matrix4x4 jointWorldMatrix = joint.GetWorldMatrix(animation, currentTime);
-                        JointWorldMatrixCache[(joint, animation, currentTime)] = jointWorldMatrix;
-                        worldMatrix = jointWorldMatrix;
-                    }
+                    joints = new JointNode[skin.JointsCount];
                     
-                    jointMatrix *= worldMatrix *
-                                   (firstIter ? Matrix4x4.Identity : jointMatrices[i].ToNumerics());
+                    for (int i = 0; i < skin.JointsCount; i++)
+                    {
+                        var (jointNode, inverseBindMatrix) = skin.GetJoint(i);
+                        joints[i] = new JointNode(jointNode, null,
+                            new TransformSampler(jointNode.GetCurveSamplers(animation)), inverseBindMatrix);
+                    }
 
-                    jointMatrices[i] = jointMatrix;
+                    foreach (JointNode joint in joints)
+                    {
+                        joint.ParentJoint = Array.Find(joints, j => j.Node == joint.Node.VisualParent);
+                    }
+
+                    JointCache[animation] = joints;
+                }
+
+                int j = 0;
+                foreach (JointNode joint in joints)
+                {
+                    Matrix4x4 jointMatrix = joint.InverseBindMatrix * invertedWorldMatrix;
+                    Matrix4x4 jointWorldMatrix = joint.GetWorldTransformMatrix(currentTime);
+
+                    jointMatrix *= jointWorldMatrix *
+                                   (firstIter ? Matrix4x4.Identity : jointMatrices[j].ToNumerics());
+                    
+                    jointMatrices[j++] = jointMatrix;
                 }
 
                 firstIter = false;
