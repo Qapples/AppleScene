@@ -51,7 +51,7 @@ namespace AppleScene.Helpers
                     {
                         var (jointNode, inverseBindMatrix) = skin.GetJoint(i);
                         joints[i] = new JointNode(jointNode, null,
-                            new TransformSampler(jointNode.GetCurveSamplers(animation)), inverseBindMatrix);
+                            new TransformKeys(jointNode.GetCurveSamplers(animation)), inverseBindMatrix);
                     }
 
                     foreach (JointNode joint in joints)
