@@ -39,8 +39,11 @@ namespace AppleScene.Helpers
             Matrix4x4 baseWorldMatrix = skin.VisualParents.FirstOrDefault()?.WorldMatrix ?? Matrix4x4.Identity;
             Matrix4x4.Invert(baseWorldMatrix, out var invertedWorldMatrix);
 
-            bool firstIter = true;
-
+            for (int i = 0; i < jointMatrices.Length; i++)
+            {
+                jointMatrices[i] = Matrix.Identity;
+            }
+            
             foreach (var (animation, currentTime) in animations.Reverse())
             {
                 if (!JointCache.TryGetValue(animation, out var joints))
@@ -68,18 +71,10 @@ namespace AppleScene.Helpers
                     Matrix4x4 jointMatrix = joint.InverseBindMatrix * invertedWorldMatrix;
                     Matrix4x4 jointWorldMatrix = joint.GetWorldTransformMatrix(currentTime);
 
-                    jointMatrix *= jointWorldMatrix *
-                                   (firstIter ? Matrix4x4.Identity : jointMatrices[j].ToNumerics());
+                    jointMatrix *= jointWorldMatrix * jointMatrices[j].ToNumerics();
                     
                     jointMatrices[j++] = jointMatrix;
                 }
-
-                firstIter = false;
-            }
-
-            if (firstIter)
-            {
-                skin.CopyBindMatrices(jointMatrices);
             }
 
             return jointMatrices;
