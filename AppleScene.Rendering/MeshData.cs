@@ -72,18 +72,19 @@ namespace AppleScene.Rendering
         /// <param name="animations">Represents the animations that will be applied to <see cref="Skin"/>. Each
         /// animation in the collection is coupled with a float representing the current point of time in the animation
         /// in seconds. To represent a lack of animations, pass <see cref="Array.Empty{T}"/>.</param>
-        /// <param name="jointTransforms">These matrices will be applied to the joints of the <see cref="Skin"/> of each
-        /// <see cref="PrimitiveData"/> in <see cref="Primitives"/>. Pass <see cref="ReadOnlySpan{T}.Empty"/> to
-        /// indicate that no joint transformations outside of animations will be applied.</param>
+        /// <param name="jointTransforms">Collection of matrices that perform two purposes depending on their value.
+        /// If a matrix has any non-zero value, then its corresponding joint takes on the transform represented
+        /// by the matrix. If the matrix is zero, then it is set to the value of the joint transformation after all
+        /// animations have been applied.</param>
         /// <param name="rasterizerState">The <see cref="RasterizerState"/> the stored <see cref="GraphicsDevice"/>
         /// will use when rendering the mesh.</param>
         public void Draw(in Matrix worldMatrix, in Matrix viewMatrix, in Matrix projectionMatrix,
-            IReadOnlyCollection<(Animation Animation, float CurrentTime)> animations, in ReadOnlySpan<Matrix> jointTransforms,
+            IReadOnlyCollection<(Animation Animation, float CurrentTime)> animations, Span<Matrix> jointTransforms,
             RasterizerState rasterizerState)
         {
             foreach (PrimitiveData primitive in Primitives)
             {
-                primitive.Draw(in worldMatrix, in viewMatrix, in projectionMatrix, animations, in jointTransforms,
+                primitive.Draw(in worldMatrix, in viewMatrix, in projectionMatrix, animations, jointTransforms,
                     Effect, rasterizerState);
             }
         }

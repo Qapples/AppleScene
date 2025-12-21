@@ -114,9 +114,10 @@ namespace AppleScene.Rendering
         /// <see cref="ActiveAnimation"/> instance also comes with a <see cref="ActiveAnimation.CurrentTime"/> that
         /// indicates how long the animation has been running for. To represent a lack of animations, pass
         /// <see cref="Array.Empty{T}"/> to indicate so.</param>
-        /// <param name="jointTransforms">These matrices will be applied to the joints of the <see cref="Skin"/>.
-        /// Pass <see cref="ReadOnlySpan{T}.Empty"/> to indicate that no joint transformations outside of animations
-        /// will be applied. </param>
+        /// <param name="jointTransforms">Collection of matrices that perform two purposes depending on their value.
+        /// If a matrix has any non-zero value, then its corresponding joint takes on the transform represented
+        /// by the matrix. If the matrix is zero, then it is set to the value of the joint transformation after all
+        /// animations have been applied.</param>
         /// <param name="effect">An <see cref="Effect"/> instance that influences the way the primitive is drawn.
         /// This parameter must implement <see cref="IEffectMatrices"/> to apply world, view, and projection matrices.
         /// In addition, this parameter must implement <see cref="IEffectBones"/> for skinning, joints, and animation
@@ -126,7 +127,7 @@ namespace AppleScene.Rendering
         // we're using a ReadOnlySpan here for compatibility purposes (it can reference anything without creating any
         // additional copies (I think)).
         public void Draw(in Matrix worldMatrix, in Matrix viewMatrix, in Matrix projectionMatrix,
-            IEnumerable<(Animation Animation, float CurrentTime)> animations, in ReadOnlySpan<Matrix> jointTransforms,
+            IEnumerable<(Animation Animation, float CurrentTime)> animations, Span<Matrix> jointTransforms,
             Effect effect, RasterizerState rasterizerState)
         {
             RasterizerState prevState = _graphicsDevice.RasterizerState;
@@ -147,9 +148,13 @@ namespace AppleScene.Rendering
                 
                 for (int i = 0; i < jointTransforms.Length; i++)
                 {
-                    if (jointTransforms[i] != Matrix.Identity)
+                    if (jointTransforms[i] != default)
                     {
                         _jointMatrices[i] = jointTransforms[i];
+                    }
+                    else
+                    {
+                        jointTransforms[i] = _jointMatrices[i];
                     }
                 }
 
