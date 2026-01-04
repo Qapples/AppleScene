@@ -75,7 +75,7 @@ namespace AppleScene.Helpers
         private static void Encode(byte[] bytes, int offset, in Vector2 value)
         {
             Vector2 temp = value;
-            MemoryMarshal.Write(bytes.AsSpan()[offset..], ref temp);
+            MemoryMarshal.Write(bytes.AsSpan()[offset..], in temp);
         }
 
         private static bool Encode(byte[] bytes, int offset, in Vector3 value, in VertexElementFormat format)
@@ -86,11 +86,11 @@ namespace AppleScene.Helpers
             {
                 case VertexElementFormat.Vector3:
                     Vector3 temp = value;
-                    MemoryMarshal.Write(span[offset..], ref temp);
+                    MemoryMarshal.Write(span[offset..], in temp);
                     return true;
                 case VertexElementFormat.Color:
                     Color color = new Color(value);
-                    MemoryMarshal.Write(span[offset..], ref color);
+                    MemoryMarshal.Write(span[offset..], in color);
                     return true;
                 default:
                     Debug.WriteLine($"Unable to convert Vector3 from the format {format}.");
@@ -106,30 +106,30 @@ namespace AppleScene.Helpers
             {
                 case VertexElementFormat.Vector4:
                     Vector4 temp = value;
-                    MemoryMarshal.Write(span[offset..], ref temp);
+                    MemoryMarshal.Write(span[offset..], in temp);
                     return true;
                 case VertexElementFormat.Byte4:
                     Byte4 byte4 = new Byte4(value);
-                    MemoryMarshal.Write(span[offset..], ref byte4);
+                    MemoryMarshal.Write(span[offset..], in byte4);
                     return true;
                 case VertexElementFormat.Color:
                     Color color = new Color(value);
-                    MemoryMarshal.Write(span[offset..], ref color);
+                    MemoryMarshal.Write(span[offset..], in color);
                     return true;
                 case VertexElementFormat.Short4:
                     Short4 short4 = new Short4(value);
-                    MemoryMarshal.Write(span[offset..], ref short4);
+                    MemoryMarshal.Write(span[offset..], in short4);
                     return true;
                 case VertexElementFormat.NormalizedShort4:
                     NormalizedByte4 normalizedByte4 = new NormalizedByte4(value);
-                    MemoryMarshal.Write(span[offset..], ref normalizedByte4);
+                    MemoryMarshal.Write(span[offset..], in normalizedByte4);
                     return true;
                 case VertexElementFormat.HalfVector4:
                     HalfVector4 halfVector4 = new HalfVector4(value);
-                    MemoryMarshal.Write(span[offset..], ref halfVector4);
+                    MemoryMarshal.Write(span[offset..], in halfVector4);
                     return true;
                 default:
-                    Debug.WriteLine($"Unable to convert Vector4 from the fromat {format}.");
+                    Debug.WriteLine($"Unable to convert Vector4 from the format {format}.");
                     return false;
             }
         }
