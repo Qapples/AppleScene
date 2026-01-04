@@ -6,9 +6,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303" />
-      <PackageReference Include="SharpGLTF.Core" Version="1.0.0-alpha0031" />
-      <PackageReference Include="SharpGLTF.Runtime" Version="1.0.0-alpha0031" />
+      <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
+      <PackageReference Include="SharpGLTF.Core" Version="1.0.6" />
+      <PackageReference Include="SharpGLTF.Runtime" Version="1.0.6" />
     </ItemGroup>
 
 </Project>
